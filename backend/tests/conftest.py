@@ -147,3 +147,49 @@ def _reset_throttle():
     login_throttle._attempts.clear()
     yield
     login_throttle._attempts.clear()
+
+
+ADMIN_PASSWORD = "conftest-admin-password"
+
+
+@pytest.fixture
+def admin_account(session: Session) -> Account:
+    from app.core.security import hash_password
+
+    account = Account(
+        role=Role.admin,
+        first_name="Root",
+        last_name="Admin",
+        email="root.admin@example.edu",
+        password_hash=hash_password(ADMIN_PASSWORD),
+    )
+    session.add(account)
+    session.commit()
+    return account
+
+
+@pytest.fixture
+def admin_client(client: TestClient, admin_account: Account) -> TestClient:
+    """A client already signed in as an administrator."""
+    response = client.post(
+        "/auth/login",
+        json={"email": admin_account.email, "password": ADMIN_PASSWORD},
+    )
+    assert response.status_code == 200, response.text
+    return client
+
+
+@pytest.fixture
+def student_client(client: TestClient, fixtures: dict, session: Session) -> TestClient:
+    """A client signed in as a student, for checking that admin routes refuse."""
+    from app.core.security import hash_password
+
+    student = fixtures["student"]
+    student.password_hash = hash_password(ADMIN_PASSWORD)
+    session.commit()
+
+    response = client.post(
+        "/auth/login", json={"email": student.email, "password": ADMIN_PASSWORD}
+    )
+    assert response.status_code == 200, response.text
+    return client
