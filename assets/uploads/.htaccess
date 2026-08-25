@@ -1,0 +1,35 @@
+# Uploaded files are user-supplied data and must never be executed.
+# The application also validates that uploads are real images, but this is the
+# layer that holds if that validation is ever bypassed or regressed.
+
+php_flag engine off
+
+<IfModule mod_php.c>
+  php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+  php_flag engine off
+</IfModule>
+<IfModule mod_php5.c>
+  php_flag engine off
+</IfModule>
+
+# Belt and braces: refuse to hand back anything that is not an image, whatever
+# the server is configured to do with it.
+<FilesMatch "\.(?i:php|phtml|php3|php4|php5|php7|phps|pht|inc|cgi|pl|py|sh|htaccess)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# Never let the browser second-guess the declared type of an upload.
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+</IfModule>
+
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .phps
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .phps

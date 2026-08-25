@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/_guard.php'; ?>
 <?php include('db_connect.php'); ?>
 <?php 
 function ordinal_suffix1($num){

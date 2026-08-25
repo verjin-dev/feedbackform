@@ -2,162 +2,69 @@
 ob_start();
 date_default_timezone_set("Asia/Manila");
 
-$action = $_GET['action'];
+// admin_class.php starts the session, so $_SESSION is populated by the include.
 include 'admin_class.php';
+
+$action = isset($_GET['action']) ? $_GET['action'] : '';
+
+// Every callable action must be listed here with the roles permitted to call it.
+// Role ids match $_SESSION['login_type']: 1 = admin, 2 = faculty, 3 = student.
+// 'public' means no session is required. An action absent from this map is a 404,
+// which is what makes the dynamic dispatch below safe.
+$permissions = array(
+	'login'                  => array('public'),
+	'logout'                 => array(1, 2, 3),
+	'update_user'            => array(1, 2, 3),
+
+	'save_evaluation'        => array(3),
+	'get_class'              => array(1, 2),
+	'get_report'             => array(1, 2),
+
+	'signup'                 => array(1),
+	'save_user'              => array(1),
+	'delete_user'            => array(1),
+	'save_faculty'           => array(1),
+	'delete_faculty'         => array(1),
+	'save_student'           => array(1),
+	'delete_student'         => array(1),
+	'save_subject'           => array(1),
+	'delete_subject'         => array(1),
+	'save_class'             => array(1),
+	'delete_class'           => array(1),
+	'save_academic'          => array(1),
+	'delete_academic'        => array(1),
+	'make_default'           => array(1),
+	'save_criteria'          => array(1),
+	'delete_criteria'        => array(1),
+	'save_criteria_order'    => array(1),
+	'save_question'          => array(1),
+	'delete_question'        => array(1),
+	'save_question_order'    => array(1),
+	'save_restriction'       => array(1),
+);
+
+if (!isset($permissions[$action])) {
+	http_response_code(404);
+	ob_end_flush();
+	exit;
+}
+
+$allowed = $permissions[$action];
+if (!in_array('public', $allowed, true)) {
+	$role = isset($_SESSION['login_type']) ? (int) $_SESSION['login_type'] : 0;
+	if (!in_array($role, $allowed, true)) {
+		http_response_code(403);
+		ob_end_flush();
+		exit;
+	}
+}
+
+// Constructed only after the check, so an unauthorized request never opens a
+// database connection.
 $crud = new Action();
-if($action == 'login'){
-	$login = $crud->login();
-	if($login)
-		echo $login;
-}
-if($action == 'login2'){
-	$login = $crud->login2();
-	if($login)
-		echo $login;
-}
-if($action == 'logout'){
-	$logout = $crud->logout();
-	if($logout)
-		echo $logout;
-}
-if($action == 'logout2'){
-	$logout = $crud->logout2();
-	if($logout)
-		echo $logout;
+$result = $crud->{$action}();
+if ($result) {
+	echo $result;
 }
 
-if($action == 'signup'){
-	$save = $crud->signup();
-	if($save)
-		echo $save;
-}
-if($action == 'save_user'){
-	$save = $crud->save_user();
-	if($save)
-		echo $save;
-}
-if($action == 'update_user'){
-	$save = $crud->update_user();
-	if($save)
-		echo $save;
-}
-if($action == 'delete_user'){
-	$save = $crud->delete_user();
-	if($save)
-		echo $save;
-}
-if($action == 'save_subject'){
-	$save = $crud->save_subject();
-	if($save)
-		echo $save;
-}
-if($action == 'delete_subject'){
-	$save = $crud->delete_subject();
-	if($save)
-		echo $save;
-}
-if($action == 'save_class'){
-	$save = $crud->save_class();
-	if($save)
-		echo $save;
-}
-if($action == 'delete_class'){
-	$save = $crud->delete_class();
-	if($save)
-		echo $save;
-}
-if($action == 'save_academic'){
-	$save = $crud->save_academic();
-	if($save)
-		echo $save;
-}
-if($action == 'delete_academic'){
-	$save = $crud->delete_academic();
-	if($save)
-		echo $save;
-}
-if($action == 'make_default'){
-	$save = $crud->make_default();
-	if($save)
-		echo $save;
-}
-if($action == 'save_criteria'){
-	$save = $crud->save_criteria();
-	if($save)
-		echo $save;
-}
-if($action == 'delete_criteria'){
-	$save = $crud->delete_criteria();
-	if($save)
-		echo $save;
-}
-if($action == 'save_question'){
-	$save = $crud->save_question();
-	if($save)
-		echo $save;
-}
-if($action == 'delete_question'){
-	$save = $crud->delete_question();
-	if($save)
-		echo $save;
-}
-
-if($action == 'save_criteria_question'){
-	$save = $crud->save_criteria_question();
-	if($save)
-		echo $save;
-}
-if($action == 'save_criteria_order'){
-	$save = $crud->save_criteria_order();
-	if($save)
-		echo $save;
-}
-
-if($action == 'save_question_order'){
-	$save = $crud->save_question_order();
-	if($save)
-		echo $save;
-}
-if($action == 'save_faculty'){
-	$save = $crud->save_faculty();
-	if($save)
-		echo $save;
-}
-if($action == 'delete_faculty'){
-	$save = $crud->delete_faculty();
-	if($save)
-		echo $save;
-}
-if($action == 'save_student'){
-	$save = $crud->save_student();
-	if($save)
-		echo $save;
-}
-if($action == 'delete_student'){
-	$save = $crud->delete_student();
-	if($save)
-		echo $save;
-}
-if($action == 'save_restriction'){
-	$save = $crud->save_restriction();
-	if($save)
-		echo $save;
-}
-if($action == 'save_evaluation'){
-	$save = $crud->save_evaluation();
-	if($save)
-		echo $save;
-}
-
-if($action == 'get_class'){
-	$get = $crud->get_class();
-	if($get)
-		echo $get;
-}
-if($action == 'get_report'){
-	$get = $crud->get_report();
-	if($get)
-		echo $get;
-}
 ob_end_flush();
-?>

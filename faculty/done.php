@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/_guard.php'; ?>
 <div class="container-fluid">
 	<p>Your are done evaluating your teachers this semester. Thank you.</p>
 </div>

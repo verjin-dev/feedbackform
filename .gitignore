@@ -1,0 +1,9 @@
+# Real database credentials — never commit.
+config.local.php
+
+# Avatars uploaded in production are user data, not source. Files already tracked
+# here are the template's seed images and stay tracked; this only stops new
+# production uploads from being committed.
+assets/uploads/*
+!assets/uploads/.htaccess
+!assets/uploads/no-image-available.png

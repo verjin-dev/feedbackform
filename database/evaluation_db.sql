@@ -303,7 +303,11 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `firstname`, `lastname`, `email`, `password`, `avatar`, `date_created`) VALUES
-(1, 'Administrator', '', 'admin@admin.com', '0192023a7bbd73250516f069df18b500', '1607135820_avatar.jpg', '2020-11-26 10:57:04');
+-- The shipped default was md5('admin123'), a publicly known hash. It is
+-- replaced with a value no md5() can ever produce, so a fresh install fails
+-- closed. Set a real password before first use:
+--   UPDATE users SET password = MD5('<your-passphrase>') WHERE id = 1;
+(1, 'Administrator', '', 'admin@admin.com', 'SET_A_PASSWORD_BEFORE_USE', '1607135820_avatar.jpg', '2020-11-26 10:57:04');
 
 --
 -- Indexes for dumped tables

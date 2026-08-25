@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/_guard.php'; ?>
 <?php include('db_connect.php');
 function ordinal_suffix1($num){
     $num = $num % 100; // protect against large numbers

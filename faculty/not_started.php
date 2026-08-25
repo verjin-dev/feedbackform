@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/_guard.php'; ?>
 <div class="container-fluid">
 	<p>Evaluation is not yet starting.</p>
 </div>

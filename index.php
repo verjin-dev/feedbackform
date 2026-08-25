@@ -46,13 +46,31 @@
     <!-- Main content -->
     <section class="content">
       <div class="container-fluid">
-         <?php 
-            $page = isset($_GET['page']) ? $_GET['page'] : 'home';
-            if(!file_exists($_SESSION['login_view_folder'].$page.".php")){
+         <?php
+            // The page name is matched against a per-role allowlist before it is
+            // used to build an include path. Without this, $_GET['page'] reaches
+            // include() directly and file_exists() is not a traversal guard.
+            $allowed_pages = array(
+              'admin/' => array(
+                'home','academic_list','class_list','criteria_list','faculty_list',
+                'student_list','subject_list','user_list','questionnaire','report',
+                'new_faculty','new_student','new_user',
+                'manage_academic','manage_class','manage_subject',
+                'manage_questionnaire','manage_restriction',
+                'view_faculty','view_student','view_user',
+                'edit_faculty','edit_student','edit_user',
+              ),
+              'faculty/' => array('home','result','not_started','done','closed'),
+              'student/' => array('home','evaluate','not_started','done','closed'),
+            );
+
+            $folder = isset($_SESSION['login_view_folder']) ? $_SESSION['login_view_folder'] : '';
+            $page   = isset($_GET['page']) ? $_GET['page'] : 'home';
+
+            if(!isset($allowed_pages[$folder]) || !in_array($page, $allowed_pages[$folder], true)){
                 include '404.html';
             }else{
-            include $_SESSION['login_view_folder'].$page.'.php';
-
+                include $folder.$page.'.php';
             }
           ?>
       </div><!--/. container-fluid -->

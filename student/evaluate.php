@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/_guard.php'; ?>
 
 <?php 
 function ordinal_suffix($num){
@@ -127,12 +128,26 @@ $restriction = $conn->query("SELECT r.id,s.id as sid,f.id as fid,concat(f.firstn
 			method:'POST',
 			data:$(this).serialize(),
 			success:function(resp){
+				resp = String(resp).trim();
 				if(resp == 1){
 					alert_toast("Data successfully saved.","success");
 					setTimeout(function(){
-						location.reload()	
+						location.reload()
 					},1750)
+				}else if(resp == 2){
+					// The database rejected a second submission for this assignment.
+					alert_toast("You have already submitted feedback for this subject.","warning");
+					setTimeout(function(){
+						location.reload()
+					},1750)
+				}else{
+					alert_toast("Your feedback could not be saved. Please try again.","error");
+					end_load();
 				}
+			},
+			error:function(){
+				alert_toast("Your feedback could not be saved. Please try again.","error");
+				end_load();
 			}
 		})
 	})

@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/_guard.php'; ?>
 <?php include'db_connect.php' ?>
 <div class="col-lg-12">
 	<div class="card card-outline card-primary">

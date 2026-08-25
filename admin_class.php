@@ -15,29 +15,81 @@ Class Action {
 	    ob_end_flush();
 	}
 
+	// Uploads land in assets/uploads/, which is web-served. Without an extension
+	// allowlist an "avatar" can be a .php file, which lets any authenticated
+	// account -- including a student, via update_user -- place a webshell.
+	// The stored name is generated here and never taken from the client.
+	private function store_upload($field, $dir = 'assets/uploads/'){
+		if(!isset($_FILES[$field]) || !is_uploaded_file($_FILES[$field]['tmp_name']))
+			return false;
+		if($_FILES[$field]['error'] !== UPLOAD_ERR_OK)
+			return false;
+		if($_FILES[$field]['size'] > 2 * 1024 * 1024)
+			return false;
+
+		$allowed = array(
+			IMAGETYPE_JPEG => 'jpg',
+			IMAGETYPE_PNG  => 'png',
+			IMAGETYPE_GIF  => 'gif',
+			IMAGETYPE_WEBP => 'webp',
+		);
+		$info = @getimagesize($_FILES[$field]['tmp_name']);
+		if($info === false || !isset($allowed[$info[2]]))
+			return false;
+
+		$fname = date('Ymd_His').'_'.bin2hex(random_bytes(8)).'.'.$allowed[$info[2]];
+		if(!move_uploaded_file($_FILES[$field]['tmp_name'], $dir.$fname))
+			return false;
+		@chmod($dir.$fname, 0644);
+		return $fname;
+	}
+
 	function login(){
-		extract($_POST);
-		$type = array("","users","faculty_list","student_list");
+		// Hardened: the role selector is validated against a fixed table list and is
+		// never used as client-supplied SQL; credentials are bound, not interpolated.
+		$email    = isset($_POST['email']) ? trim($_POST['email']) : '';
+		$password = isset($_POST['password']) ? $_POST['password'] : '';
+		$login    = isset($_POST['login']) ? $_POST['login'] : '';
+
+		$type  = array("","users","faculty_list","student_list");
 		$type2 = array("","admin","faculty","student");
-			$qry = $this->db->query("SELECT *,concat(firstname,' ',lastname) as name FROM {$type[$login]} where email = '".$email."' and password = '".md5($password)."'  ");
-		if($qry->num_rows > 0){
+
+		if(!ctype_digit((string)$login) || (int)$login < 1 || (int)$login > 3)
+			return 2;
+		$login = (int)$login;
+		$table = $type[$login];
+
+		if($email === '' || $password === '')
+			return 2;
+
+		$stmt = $this->db->prepare("SELECT *,concat(firstname,' ',lastname) as name FROM {$table} where email = ? and password = ? limit 1");
+		if(!$stmt)
+			return 2;
+		$hash = md5($password);
+		$stmt->bind_param('ss', $email, $hash);
+		$stmt->execute();
+		$qry = $stmt->get_result();
+
+		if($qry && $qry->num_rows > 0){
 			foreach ($qry->fetch_array() as $key => $value) {
 				if($key != 'password' && !is_numeric($key))
 					$_SESSION['login_'.$key] = $value;
 			}
-					$_SESSION['login_type'] = $login;
-					$_SESSION['login_view_folder'] = $type2[$login].'/';
-		$academic = $this->db->query("SELECT * FROM academic_list where is_default = 1 ");
-		if($academic->num_rows > 0){
-			foreach($academic->fetch_array() as $k => $v){
-				if(!is_numeric($k))
-					$_SESSION['academic'][$k] = $v;
+			$_SESSION['login_type'] = $login;
+			$_SESSION['login_view_folder'] = $type2[$login].'/';
+			$stmt->close();
+
+			$academic = $this->db->query("SELECT * FROM academic_list where is_default = 1 ");
+			if($academic->num_rows > 0){
+				foreach($academic->fetch_array() as $k => $v){
+					if(!is_numeric($k))
+						$_SESSION['academic'][$k] = $v;
+				}
 			}
+			return 1;
 		}
-				return 1;
-		}else{
-			return 2;
-		}
+		$stmt->close();
+		return 2;
 	}
 	function logout(){
 		session_destroy();
@@ -45,19 +97,6 @@ Class Action {
 			unset($_SESSION[$key]);
 		}
 		header("location:login.php");
-	}
-	function login2(){
-		extract($_POST);
-			$qry = $this->db->query("SELECT *,concat(lastname,', ',firstname,' ',middlename) as name FROM students where student_code = '".$student_code."' ");
-		if($qry->num_rows > 0){
-			foreach ($qry->fetch_array() as $key => $value) {
-				if($key != 'password' && !is_numeric($key))
-					$_SESSION['rs_'.$key] = $value;
-			}
-				return 1;
-		}else{
-			return 3;
-		}
 	}
 	function save_user(){
 		extract($_POST);
@@ -81,10 +120,11 @@ Class Action {
 			exit;
 		}
 		if(isset($_FILES['img']) && $_FILES['img']['tmp_name'] != ''){
-			$fname = strtotime(date('y-m-d H:i')).'_'.$_FILES['img']['name'];
-			$move = move_uploaded_file($_FILES['img']['tmp_name'],'assets/uploads/'. $fname);
-			$data .= ", avatar = '$fname' ";
-
+			$fname = $this->store_upload('img');
+			if($fname !== false)
+				$data .= ", avatar = '$fname' ";
+			else
+				error_log('rejected avatar upload in '.__FUNCTION__);
 		}
 		if(empty($id)){
 			$save = $this->db->query("INSERT INTO users set $data");
@@ -121,10 +161,11 @@ Class Action {
 			exit;
 		}
 		if(isset($_FILES['img']) && $_FILES['img']['tmp_name'] != ''){
-			$fname = strtotime(date('y-m-d H:i')).'_'.$_FILES['img']['name'];
-			$move = move_uploaded_file($_FILES['img']['tmp_name'],'assets/uploads/'. $fname);
-			$data .= ", avatar = '$fname' ";
-
+			$fname = $this->store_upload('img');
+			if($fname !== false)
+				$data .= ", avatar = '$fname' ";
+			else
+				error_log('rejected avatar upload in '.__FUNCTION__);
 		}
 		if(empty($id)){
 			$save = $this->db->query("INSERT INTO users set $data");
@@ -167,10 +208,11 @@ Class Action {
 			exit;
 		}
 		if(isset($_FILES['img']) && $_FILES['img']['tmp_name'] != ''){
-			$fname = strtotime(date('y-m-d H:i')).'_'.$_FILES['img']['name'];
-			$move = move_uploaded_file($_FILES['img']['tmp_name'],'assets/uploads/'. $fname);
-			$data .= ", avatar = '$fname' ";
-
+			$fname = $this->store_upload('img');
+			if($fname !== false)
+				$data .= ", avatar = '$fname' ";
+			else
+				error_log('rejected avatar upload in '.__FUNCTION__);
 		}
 		if(!empty($password))
 			$data .= " ,password=md5('$password') ";
@@ -209,11 +251,10 @@ Class Action {
 				}
 			}
 		}
-		if($_FILES['cover']['tmp_name'] != ''){
-			$fname = strtotime(date('y-m-d H:i')).'_'.$_FILES['cover']['name'];
-			$move = move_uploaded_file($_FILES['cover']['tmp_name'],'../assets/uploads/'. $fname);
-			$data .= ", cover_img = '$fname' ";
-
+		if(isset($_FILES['cover']) && $_FILES['cover']['tmp_name'] != ''){
+			$fname = $this->store_upload('cover', '../assets/uploads/');
+			if($fname !== false)
+				$data .= ", cover_img = '$fname' ";
 		}
 		$chk = $this->db->query("SELECT * FROM system_settings");
 		if($chk->num_rows > 0){
@@ -231,20 +272,6 @@ Class Action {
 				$_SESSION['system']['cover_img'] = $fname;
 			}
 			return 1;
-		}
-	}
-	function save_image(){
-		extract($_FILES['file']);
-		if(!empty($tmp_name)){
-			$fname = strtotime(date("Y-m-d H:i"))."_".(str_replace(" ","-",$name));
-			$move = move_uploaded_file($tmp_name,'assets/uploads/'. $fname);
-			$protocol = strtolower(substr($_SERVER["SERVER_PROTOCOL"],0,5))=='https'?'https':'http';
-			$hostName = $_SERVER['HTTP_HOST'];
-			$path =explode('/',$_SERVER['PHP_SELF']);
-			$currentPath = '/'.$path[1]; 
-			if($move){
-				return $protocol.'://'.$hostName.$currentPath.'/assets/uploads/'.$fname;
-			}
 		}
 	}
 	function save_subject(){
@@ -480,10 +507,11 @@ Class Action {
 			exit;
 		}
 		if(isset($_FILES['img']) && $_FILES['img']['tmp_name'] != ''){
-			$fname = strtotime(date('y-m-d H:i')).'_'.$_FILES['img']['name'];
-			$move = move_uploaded_file($_FILES['img']['tmp_name'],'assets/uploads/'. $fname);
-			$data .= ", avatar = '$fname' ";
-
+			$fname = $this->store_upload('img');
+			if($fname !== false)
+				$data .= ", avatar = '$fname' ";
+			else
+				error_log('rejected avatar upload in '.__FUNCTION__);
 		}
 		if(empty($id)){
 			$save = $this->db->query("INSERT INTO faculty_list set $data");
@@ -523,10 +551,11 @@ Class Action {
 			exit;
 		}
 		if(isset($_FILES['img']) && $_FILES['img']['tmp_name'] != ''){
-			$fname = strtotime(date('y-m-d H:i')).'_'.$_FILES['img']['name'];
-			$move = move_uploaded_file($_FILES['img']['tmp_name'],'assets/uploads/'. $fname);
-			$data .= ", avatar = '$fname' ";
-
+			$fname = $this->store_upload('img');
+			if($fname !== false)
+				$data .= ", avatar = '$fname' ";
+			else
+				error_log('rejected avatar upload in '.__FUNCTION__);
 		}
 		if(empty($id)){
 			$save = $this->db->query("INSERT INTO student_list set $data");
@@ -631,24 +660,99 @@ Class Action {
 			return 1;
 	}
 	function save_evaluation(){
-		extract($_POST);
-		$data = " student_id = {$_SESSION['login_id']} ";
-		$data .= ", academic_id = $academic_id ";
-		$data .= ", subject_id = $subject_id ";
-		$data .= ", class_id = $class_id ";
-		$data .= ", restriction_id = $restriction_id ";
-		$data .= ", faculty_id = $faculty_id ";
-		$save = $this->db->query("INSERT INTO evaluation_list set $data");
-		if($save){
-			$eid = $this->db->insert_id;
-			foreach($qid as $k => $v){
-				$data = " evaluation_id = $eid ";
-				$data .= ", question_id = $v ";
-				$data .= ", rate = {$rate[$v]} ";
-				$ins[] = $this->db->query("INSERT INTO evaluation_answers set $data ");
+		// Hardened: ids are bound as integers, the submission is written in one
+		// transaction, and the unique index on
+		// (academic_id, student_id, restriction_id) is what actually prevents a
+		// duplicate — the UI filter alone never did.
+		// Return codes: 1 = saved, 2 = already submitted, 0 = rejected or failed.
+		$student_id = isset($_SESSION['login_id']) ? (int)$_SESSION['login_id'] : 0;
+		if($student_id < 1)
+			return 0;
+
+		$v = array();
+		foreach(array('academic_id','subject_id','class_id','restriction_id','faculty_id') as $k){
+			if(!isset($_POST[$k]) || !ctype_digit((string)$_POST[$k]) || (int)$_POST[$k] < 1)
+				return 0;
+			$v[$k] = (int)$_POST[$k];
+		}
+
+		$qid  = isset($_POST['qid']) && is_array($_POST['qid']) ? $_POST['qid'] : array();
+		$rate = isset($_POST['rate']) && is_array($_POST['rate']) ? $_POST['rate'] : array();
+		if(empty($qid))
+			return 0;
+
+		// Reject outright if any answer is missing or out of range, rather than
+		// storing a partial evaluation.
+		$answers = array();
+		foreach($qid as $q){
+			if(!ctype_digit((string)$q) || (int)$q < 1)
+				return 0;
+			$q = (int)$q;
+			if(!isset($rate[$q]) || !ctype_digit((string)$rate[$q]))
+				return 0;
+			$r = (int)$rate[$q];
+			if($r < 1 || $r > 5)
+				return 0;
+			$answers[$q] = $r;
+		}
+
+		// The evaluation window must be open (1 = Start).
+		$status = isset($_SESSION['academic']['status']) ? (int)$_SESSION['academic']['status'] : 0;
+		if($status !== 1)
+			return 0;
+
+		// The assignment must genuinely exist for this term, class, subject and faculty.
+		$chk = $this->db->prepare("SELECT id FROM restriction_list where id = ? and academic_id = ? and class_id = ? and subject_id = ? and faculty_id = ? limit 1");
+		if(!$chk)
+			return 0;
+		$chk->bind_param('iiiii', $v['restriction_id'], $v['academic_id'], $v['class_id'], $v['subject_id'], $v['faculty_id']);
+		$chk->execute();
+		$owns  = $chk->get_result();
+		$valid = $owns && $owns->num_rows > 0;
+		$chk->close();
+		if(!$valid)
+			return 0;
+
+		// Return values are checked explicitly so this behaves the same on PHP
+		// versions before 8.1, where mysqli does not throw on error.
+		$errno = 0;
+		$this->db->begin_transaction();
+		try{
+			$stmt = $this->db->prepare("INSERT INTO evaluation_list (student_id, academic_id, subject_id, class_id, restriction_id, faculty_id) VALUES (?,?,?,?,?,?)");
+			if(!$stmt)
+				throw new Exception('prepare evaluation_list failed');
+			$stmt->bind_param('iiiiii', $student_id, $v['academic_id'], $v['subject_id'], $v['class_id'], $v['restriction_id'], $v['faculty_id']);
+			if(!$stmt->execute()){
+				$errno = $stmt->errno;
+				$stmt->close();
+				throw new Exception('insert evaluation_list failed');
 			}
-			if(isset($ins))
-				return 1;
+			$eid = $this->db->insert_id;
+			$stmt->close();
+
+			$ans = $this->db->prepare("INSERT INTO evaluation_answers (evaluation_id, question_id, rate) VALUES (?,?,?)");
+			if(!$ans)
+				throw new Exception('prepare evaluation_answers failed');
+			foreach($answers as $q => $r){
+				$ans->bind_param('iii', $eid, $q, $r);
+				if(!$ans->execute()){
+					$errno = $ans->errno;
+					$ans->close();
+					throw new Exception('insert evaluation_answers failed');
+				}
+			}
+			$ans->close();
+
+			$this->db->commit();
+			return 1;
+		}catch(Exception $e){
+			if($errno === 0)
+				$errno = $this->db->errno ? $this->db->errno : (int)$e->getCode();
+			$this->db->rollback();
+			if($errno == 1062)
+				return 2;
+			error_log('save_evaluation failed: '.$e->getMessage().' (errno '.$errno.')');
+			return 0;
 		}
 	}
 	function get_class(){

@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/_guard.php'; ?>
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
     <div class="dropdown">
    	<a href="./" class="brand-link">

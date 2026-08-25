@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/_guard.php'; ?>
 <?php
 include 'db_connect.php';
 $qry = $conn->query("SELECT * FROM student_list where id = ".$_GET['id'])->fetch_array();

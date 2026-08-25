@@ -1,3 +1,4 @@
+<?php require_once __DIR__ . '/_guard.php'; ?>
 
 <?php $faculty_id = $_SESSION['login_id'] ?>
 <?php 
