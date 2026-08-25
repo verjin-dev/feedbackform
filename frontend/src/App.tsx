@@ -20,7 +20,9 @@ import {
   CriteriaPage,
   SubjectsPage,
 } from '@/routes/admin/SimpleResources';
-import { FacultyResults, NotFound, StudentEvaluate } from '@/routes/placeholders';
+import { ResultsPage } from '@/routes/faculty/ResultsPage';
+import { NotFoundPage } from '@/routes/NotFoundPage';
+import { EvaluatePage } from '@/routes/student/EvaluatePage';
 
 const ADMIN = ['admin'] as const;
 const FACULTY = ['faculty'] as const;
@@ -57,13 +59,13 @@ export function App() {
 
       <Route element={<RequireRole allow={FACULTY} />}>
         <Route element={<AppShell />}>
-          <Route path="/results" element={<FacultyResults />} />
+          <Route path="/results" element={<ResultsPage />} />
         </Route>
       </Route>
 
       <Route element={<RequireRole allow={STUDENT} />}>
         <Route element={<AppShell />}>
-          <Route path="/evaluate" element={<StudentEvaluate />} />
+          <Route path="/evaluate" element={<EvaluatePage />} />
         </Route>
       </Route>
 
@@ -71,7 +73,7 @@ export function App() {
           visitor to sign in, not reveal that the route does not exist. */}
       <Route element={<RequireRole allow={[...ADMIN, ...FACULTY, ...STUDENT]} />}>
         <Route element={<AppShell />}>
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Route>
     </Routes>
