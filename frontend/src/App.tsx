@@ -6,21 +6,21 @@ import { landingFor } from '@/auth/landing';
 import { AppShell } from '@/components/AppShell';
 import { LoginPage } from '@/routes/LoginPage';
 import {
-  AdminAcademicYears,
-  AdminAssignments,
-  AdminClasses,
-  AdminCriteria,
-  AdminFaculty,
-  AdminOverview,
-  AdminQuestionnaire,
-  AdminReports,
-  AdminStudents,
-  AdminSubjects,
-  AdminUsers,
-  FacultyResults,
-  NotFound,
-  StudentEvaluate,
-} from '@/routes/placeholders';
+  AdminUsersPage,
+  FacultyPage,
+  StudentsPage,
+} from '@/routes/admin/AccountsPage';
+import { AssignmentsPage } from '@/routes/admin/AssignmentsPage';
+import { OverviewPage } from '@/routes/admin/OverviewPage';
+import { QuestionnairePage } from '@/routes/admin/QuestionnairePage';
+import { ReportsPage } from '@/routes/admin/ReportsPage';
+import {
+  AcademicYearsPage,
+  ClassesPage,
+  CriteriaPage,
+  SubjectsPage,
+} from '@/routes/admin/SimpleResources';
+import { FacultyResults, NotFound, StudentEvaluate } from '@/routes/placeholders';
 
 const ADMIN = ['admin'] as const;
 const FACULTY = ['faculty'] as const;
@@ -41,17 +41,17 @@ export function App() {
 
       <Route element={<RequireRole allow={ADMIN} />}>
         <Route element={<AppShell />}>
-          <Route path="/admin" element={<AdminOverview />} />
-          <Route path="/admin/academic-years" element={<AdminAcademicYears />} />
-          <Route path="/admin/classes" element={<AdminClasses />} />
-          <Route path="/admin/subjects" element={<AdminSubjects />} />
-          <Route path="/admin/criteria" element={<AdminCriteria />} />
-          <Route path="/admin/questionnaire" element={<AdminQuestionnaire />} />
-          <Route path="/admin/assignments" element={<AdminAssignments />} />
-          <Route path="/admin/faculty" element={<AdminFaculty />} />
-          <Route path="/admin/students" element={<AdminStudents />} />
-          <Route path="/admin/users" element={<AdminUsers />} />
-          <Route path="/admin/reports" element={<AdminReports />} />
+          <Route path="/admin" element={<OverviewPage />} />
+          <Route path="/admin/academic-years" element={<AcademicYearsPage />} />
+          <Route path="/admin/classes" element={<ClassesPage />} />
+          <Route path="/admin/subjects" element={<SubjectsPage />} />
+          <Route path="/admin/criteria" element={<CriteriaPage />} />
+          <Route path="/admin/questionnaire" element={<QuestionnairePage />} />
+          <Route path="/admin/assignments" element={<AssignmentsPage />} />
+          <Route path="/admin/faculty" element={<FacultyPage />} />
+          <Route path="/admin/students" element={<StudentsPage />} />
+          <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/reports" element={<ReportsPage />} />
         </Route>
       </Route>
 

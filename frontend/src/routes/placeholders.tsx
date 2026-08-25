@@ -1,8 +1,7 @@
 import { Card } from '@/components/ui';
 
-/** P6 ships the shell, not the screens. Each of these is replaced by real work
- *  in P7 (admin) and P8 (student and faculty). They exist so every route in the
- *  navigation resolves and the role guards can be exercised end to end. */
+/** The two screens still to be built, in P8. The admin placeholders these sat
+ *  beside were replaced by real screens in P7. */
 function Placeholder({ title, phase }: { title: string; phase: string }) {
   return (
     <Card title={title}>
@@ -13,17 +12,6 @@ function Placeholder({ title, phase }: { title: string; phase: string }) {
   );
 }
 
-export const AdminOverview = () => <Placeholder title="Overview" phase="P7" />;
-export const AdminAcademicYears = () => <Placeholder title="Academic years" phase="P7" />;
-export const AdminClasses = () => <Placeholder title="Classes" phase="P7" />;
-export const AdminSubjects = () => <Placeholder title="Subjects" phase="P7" />;
-export const AdminCriteria = () => <Placeholder title="Criteria" phase="P7" />;
-export const AdminQuestionnaire = () => <Placeholder title="Questionnaire" phase="P7" />;
-export const AdminAssignments = () => <Placeholder title="Assignments" phase="P7" />;
-export const AdminFaculty = () => <Placeholder title="Faculty" phase="P7" />;
-export const AdminStudents = () => <Placeholder title="Students" phase="P7" />;
-export const AdminUsers = () => <Placeholder title="Administrators" phase="P7" />;
-export const AdminReports = () => <Placeholder title="Reports" phase="P7" />;
 
 export const StudentEvaluate = () => <Placeholder title="Give feedback" phase="P8" />;
 export const FacultyResults = () => <Placeholder title="My results" phase="P8" />;
