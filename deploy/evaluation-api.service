@@ -1,0 +1,41 @@
+# systemd unit for the FastAPI backend.
+#   sudo cp deploy/evaluation-api.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now evaluation-api
+
+[Unit]
+Description=Faculty Evaluation API
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=exec
+User=evaluation
+Group=evaluation
+WorkingDirectory=/srv/evaluation/backend
+
+# Credentials live here, root-owned and readable only by the service user.
+# Never in the repository, and never in this unit file.
+EnvironmentFile=/etc/evaluation/api.env
+
+ExecStart=/srv/evaluation/backend/.venv/bin/gunicorn app.main:app \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --workers 3 \
+    --bind 127.0.0.1:8000 \
+    --access-logfile - \
+    --error-logfile -
+
+Restart=on-failure
+RestartSec=5s
+
+# The service reads its code, writes uploads, and needs nothing else.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/evaluation/uploads
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target
