@@ -1,0 +1,128 @@
+// Mirrors the Pydantic schemas in backend/app/schemas.
+//
+// Hand-written for now. Once the surface stops moving, generating these from
+// the OpenAPI document the backend already publishes at /openapi.json removes
+// the chance of the two drifting apart.
+
+export type Role = 'admin' | 'faculty' | 'student';
+export type TermStatus = 'pending' | 'open' | 'closed';
+
+export interface Account {
+  id: number;
+  role: Role;
+  school_id: string | null;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  email: string;
+  class_group_id: number | null;
+  avatar: string | null;
+}
+
+export interface AcademicTerm {
+  id: number;
+  year: string;
+  semester: number;
+  status: TermStatus;
+  is_current: boolean;
+}
+
+export interface ClassGroup {
+  id: number;
+  curriculum: string;
+  level: string;
+  section: string;
+  label: string;
+}
+
+export interface Subject {
+  id: number;
+  code: string;
+  name: string;
+  description: string | null;
+}
+
+export interface Criterion {
+  id: number;
+  name: string;
+  position: number;
+}
+
+export interface Question {
+  id: number;
+  term_id: number;
+  criterion_id: number;
+  text: string;
+  position: number;
+}
+
+export interface TeachingAssignment {
+  id: number;
+  term_id: number;
+  faculty_id: number;
+  faculty_name: string;
+  class_group_id: number;
+  class_label: string;
+  subject_id: number;
+  subject_code: string;
+  subject_name: string;
+}
+
+export interface PendingAssignment {
+  assignment_id: number;
+  faculty_id: number;
+  faculty_name: string;
+  subject_id: number;
+  subject_code: string;
+  subject_name: string;
+}
+
+export interface QuestionnaireBlock {
+  criterion_id: number;
+  name: string;
+  questions: { id: number; text: string }[];
+}
+
+export interface Questionnaire {
+  term: Pick<AcademicTerm, 'id' | 'year' | 'semester' | 'status'>;
+  criteria: QuestionnaireBlock[];
+}
+
+/** `mean` is null, never 0, when nothing was answered. */
+export interface QuestionReport {
+  question_id: number;
+  text: string;
+  counts: Record<string, number>;
+  percentages: Record<string, number>;
+  responses: number;
+  mean: number | null;
+}
+
+export interface CriterionReport {
+  criterion_id: number;
+  name: string;
+  questions: QuestionReport[];
+  mean: number | null;
+}
+
+export interface AssignmentReport {
+  assignment_id: number;
+  subject_id: number;
+  subject_code: string;
+  subject_name: string;
+  class_group_id: number;
+  class_label: string;
+  eligible_students: number;
+  responses: number;
+  response_rate: number | null;
+  criteria: CriterionReport[];
+  mean: number | null;
+}
+
+export interface FacultyReport {
+  faculty_id: number;
+  faculty_name: string;
+  term: Pick<AcademicTerm, 'id' | 'year' | 'semester' | 'status'>;
+  assignments: AssignmentReport[];
+  mean: number | null;
+}

@@ -1,0 +1,80 @@
+@import 'tailwindcss';
+
+/* Design tokens.
+ *
+ * AdminLTE brought roughly 1,400 vendor files to style fourteen screens. This
+ * replaces it with a small token set: one accent, a neutral ramp biased
+ * slightly toward it, and separate semantic colours that are never used as the
+ * accent. Everything below is referenced through Tailwind utilities, so a
+ * palette change happens here and nowhere else.
+ */
+@theme {
+  --font-sans: 'Inter var', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    sans-serif;
+
+  /* Neutrals, cooled very slightly toward the accent so greys read as chosen
+   * rather than inherited. */
+  --color-ink-50: #f5f7f7;
+  --color-ink-100: #e9eeee;
+  --color-ink-200: #d3dbdb;
+  --color-ink-300: #adbaba;
+  --color-ink-400: #7d8f8e;
+  --color-ink-500: #5c6d6c;
+  --color-ink-600: #475655;
+  --color-ink-700: #3a4645;
+  --color-ink-800: #202b2a;
+  --color-ink-900: #131d1c;
+
+  /* Single accent. Everything interactive derives from it. */
+  --color-accent-50: #e8f4f3;
+  --color-accent-100: #c8e6e3;
+  --color-accent-300: #6bbdb7;
+  --color-accent-500: #0d6a66;
+  --color-accent-600: #0a5451;
+  --color-accent-700: #08423f;
+
+  /* Semantic, deliberately not the accent hue: state must be distinguishable
+   * from emphasis. */
+  --color-positive-100: #dcefe5;
+  --color-positive-600: #2c7455;
+  --color-caution-100: #f7ecd6;
+  --color-caution-600: #8a6310;
+  --color-critical-100: #f8e3df;
+  --color-critical-600: #a03726;
+}
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-ink-50);
+  color: var(--color-ink-800);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Every interactive element gets a visible focus ring. AdminLTE suppressed
+ * outlines in several places, which made the app unusable by keyboard. */
+:focus-visible {
+  outline: 2px solid var(--color-accent-500);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
