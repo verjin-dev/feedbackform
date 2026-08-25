@@ -189,49 +189,95 @@ Class Action {
 	}
 
 	function update_user(){
-		extract($_POST);
-		$data = "";
-		$type = array("","users","faculty_list","student_list");
-	foreach($_POST as $k => $v){
-			if(!in_array($k, array('id','cpass','table','password')) && !is_numeric($k)){
-				
-				if(empty($data)){
-					$data .= " $k='$v' ";
-				}else{
-					$data .= ", $k='$v' ";
-				}
-			}
-		}
-		$check = $this->db->query("SELECT * FROM {$type[$_SESSION['login_type']]} where email ='$email' ".(!empty($id) ? " and id != {$id} " : ''))->num_rows;
-		if($check > 0){
+		// Updates the signed-in account's own profile, and nothing else.
+		//
+		// This function previously took the row id from the request, looped
+		// every POST key into `SET $k='$v'`, and then copied every POST key
+		// into $_SESSION['login_'.$key]. Posting id=2 therefore edited another
+		// account -- including its password -- and simultaneously moved the
+		// caller's session onto that account. A signed-in student could take
+		// over any other student, and a faculty member any other faculty.
+		//
+		// The id now comes from the session, the writable columns are listed
+		// explicitly, and the values are bound.
+		$type = array("", "users", "faculty_list", "student_list");
+
+		$role = isset($_SESSION['login_type']) ? (int)$_SESSION['login_type'] : 0;
+		$id   = isset($_SESSION['login_id']) ? (int)$_SESSION['login_id'] : 0;
+		if($role < 1 || $role > 3 || $id < 1)
 			return 2;
-			exit;
-		}
+		$table = $type[$role];
+
+		$firstname = isset($_POST['firstname']) ? trim($_POST['firstname']) : '';
+		$lastname  = isset($_POST['lastname']) ? trim($_POST['lastname']) : '';
+		$email     = isset($_POST['email']) ? trim($_POST['email']) : '';
+		$password  = isset($_POST['password']) ? $_POST['password'] : '';
+
+		if($firstname === '' || $lastname === '' || $email === '')
+			return 2;
+		if(!filter_var($email, FILTER_VALIDATE_EMAIL))
+			return 2;
+
+		$check = $this->db->prepare("SELECT id FROM {$table} where email = ? and id != ? limit 1");
+		if(!$check)
+			return 2;
+		$check->bind_param('si', $email, $id);
+		$check->execute();
+		$taken = $check->get_result();
+		$clash = $taken && $taken->num_rows > 0;
+		$check->close();
+		if($clash)
+			return 2;
+
+		$columns = array('firstname = ?', 'lastname = ?', 'email = ?');
+		$types   = 'sss';
+		$values  = array($firstname, $lastname, $email);
+
+		$avatar = false;
 		if(isset($_FILES['img']) && $_FILES['img']['tmp_name'] != ''){
-			$fname = $this->store_upload('img');
-			if($fname !== false)
-				$data .= ", avatar = '$fname' ";
-			else
+			$avatar = $this->store_upload('img');
+			if($avatar === false){
 				error_log('rejected avatar upload in '.__FUNCTION__);
-		}
-		if(!empty($password))
-			$data .= " ,password=md5('$password') ";
-		if(empty($id)){
-			$save = $this->db->query("INSERT INTO {$type[$_SESSION['login_type']]} set $data");
-		}else{
-			echo "UPDATE {$type[$_SESSION['login_type']]} set $data where id = $id";
-			$save = $this->db->query("UPDATE {$type[$_SESSION['login_type']]} set $data where id = $id");
+			}else{
+				$columns[] = 'avatar = ?';
+				$types    .= 's';
+				$values[]  = $avatar;
+			}
 		}
 
-		if($save){
-			foreach ($_POST as $key => $value) {
-				if($key != 'password' && !is_numeric($key))
-					$_SESSION['login_'.$key] = $value;
-			}
-			if(isset($_FILES['img']) && !empty($_FILES['img']['tmp_name']))
-					$_SESSION['login_avatar'] = $fname;
-			return 1;
+		if($password !== ''){
+			// Still MD5, because that is what login() compares against until
+			// the rebuild replaces it. Bound rather than interpolated.
+			$columns[] = 'password = ?';
+			$types    .= 's';
+			$values[]  = md5($password);
 		}
+
+		$sql  = "UPDATE {$table} set ".implode(', ', $columns)." where id = ?";
+		$types .= 'i';
+		$values[] = $id;
+
+		$stmt = $this->db->prepare($sql);
+		if(!$stmt)
+			return 2;
+		$stmt->bind_param($types, ...$values);
+		$ok = $stmt->execute();
+		$stmt->close();
+
+		if(!$ok)
+			return 2;
+
+		// Only the fields actually written are mirrored into the session, and
+		// never login_id or login_type: those identify the account and must not
+		// be movable by a request.
+		$_SESSION['login_firstname'] = $firstname;
+		$_SESSION['login_lastname']  = $lastname;
+		$_SESSION['login_email']     = $email;
+		$_SESSION['login_name']      = $firstname.' '.$lastname;
+		if($avatar !== false)
+			$_SESSION['login_avatar'] = $avatar;
+
+		return 1;
 	}
 	function delete_user(){
 		extract($_POST);

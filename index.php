@@ -1,22 +1,37 @@
+<?php
+// The session and the access check run before any output is emitted.
+//
+// This file previously opened with the doctype and called session_start() on
+// line 3, which only worked because output_buffering happened to be on: with
+// it off the session never started, $_SESSION was empty on every request, and
+// the redirect below failed silently with "headers already sent". The access
+// check was relying on a php.ini setting rather than on being correct.
+session_start();
+
+if (!isset($_SESSION['login_id'])) {
+	header('location:login.php');
+	// header() does not stop execution. Without this exit, the rest of the page
+	// still ran and issued every one of its queries for a visitor who was never
+	// signed in; the browser followed the redirect, so nobody saw it happen.
+	exit;
+}
+
+include 'db_connect.php';
+
+if (!isset($_SESSION['system'])) {
+	$system = $conn->query("SELECT * FROM system_settings")->fetch_array();
+	if ($system) {
+		foreach ($system as $k => $v) {
+			if (!is_numeric($k)) {
+				$_SESSION['system'][$k] = $v;
+			}
+		}
+	}
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
-<?php session_start() ?>
-<?php 
-	if(!isset($_SESSION['login_id']))
-	    header('location:login.php');
-    include 'db_connect.php';
-    ob_start();
-  if(!isset($_SESSION['system'])){
-
-    $system = $conn->query("SELECT * FROM system_settings")->fetch_array();
-    foreach($system as $k => $v){
-      $_SESSION['system'][$k] = $v;
-    }
-  }
-  ob_end_flush();
-
-	include 'header.php' 
-?>
+<?php include 'header.php' ?>
 <body class="hold-transition sidebar-mini layout-fixed layout-navbar-fixed layout-footer-fixed">
 <div class="wrapper">
   <?php include 'topbar.php' ?>
