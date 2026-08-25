@@ -1,5 +1,15 @@
+import os
+
+# Set before any app import: app.core.database builds its engine from settings
+# at import time, and the app refuses to start without an explicit URL.
+os.environ.setdefault("DATABASE_URL", "sqlite://")
+os.environ.setdefault("ENVIRONMENT", "test")
+os.environ.setdefault("SECRET_KEY", "test-only-signing-key")
+
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, event
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.orm import Session
 
 from app.models import (
@@ -18,7 +28,16 @@ from app.models import (
 
 @pytest.fixture
 def engine():
-    eng = create_engine("sqlite://", future=True)
+    # StaticPool keeps every connection pointed at the same in-memory
+    # database; without it each connection gets its own empty one.
+    # check_same_thread is off because TestClient runs the app on another
+    # thread than the test.
+    eng = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+        future=True,
+    )
 
     @event.listens_for(eng, "connect")
     def _fk_on(dbapi_connection, connection_record):
@@ -104,3 +123,27 @@ def fixtures(session: Session) -> dict:
         "assignment": assignment,
         "questions": questions,
     }
+
+
+@pytest.fixture
+def client(session: Session) -> TestClient:
+    """App wired to the test session, so requests and fixtures see one
+    database."""
+    from app.core.database import get_session
+    from app.main import app
+
+    app.dependency_overrides[get_session] = lambda: session
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def _reset_throttle():
+    """The login throttle is process-global; without this, tests that generate
+    failures would leak into later ones."""
+    from app.core.throttle import login_throttle
+
+    login_throttle._attempts.clear()
+    yield
+    login_throttle._attempts.clear()
