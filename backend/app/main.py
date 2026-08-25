@@ -1,7 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import accounts, assignments, auth, reference
+from app.api.routes import (
+    accounts,
+    assignments,
+    auth,
+    evaluations,
+    reference,
+    reports,
+)
 from app.core.config import get_settings
 
 settings = get_settings()
@@ -32,6 +39,8 @@ app.include_router(auth.router)
 app.include_router(reference.router)
 app.include_router(accounts.router)
 app.include_router(assignments.router)
+app.include_router(evaluations.router)
+app.include_router(reports.router)
 
 
 @app.get("/health", tags=["meta"])
