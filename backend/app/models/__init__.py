@@ -10,6 +10,7 @@ from app.models.evaluation import (
     EvaluationSubmission,
 )
 from app.models.questionnaire import Criterion, Question
+from app.models.reminder import ReminderLog
 
 __all__ = [
     "AcademicTerm",
@@ -21,6 +22,7 @@ __all__ = [
     "EvaluationResponse",
     "EvaluationSubmission",
     "Question",
+    "ReminderLog",
     "Role",
     "Subject",
     "TeachingAssignment",

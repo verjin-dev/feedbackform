@@ -87,3 +87,34 @@ def send_invitation(account: Account, *, invited_by: str | None = None) -> str:
         )
     )
     return token
+
+
+def send_reminder(account: Account, subjects: list[str], term_label: str) -> None:
+    """Names the subjects actually outstanding.
+
+    A generic "please complete your feedback" makes the recipient go and find
+    out what is left; listing it means the decision to respond and the
+    information needed to act on it arrive together.
+    """
+    listed = "\n".join(f"  - {subject}" for subject in subjects)
+    count = len(subjects)
+    plural = "s" if count != 1 else ""
+    evaluate_url = f"{settings.app_base_url.rstrip('/')}/evaluate"
+
+    send(
+        Message(
+            to=account.email,
+            subject=f"{count} subject{plural} still to review — {term_label}",
+            body=(
+                f"Hello {account.first_name},\n\n"
+                f"You have {count} subject{plural} left to give feedback on for "
+                f"{term_label}:\n\n"
+                f"{listed}\n\n"
+                "It takes about a minute and a half each:\n\n"
+                f"{evaluate_url}\n\n"
+                "Your answers are recorded without your name. Your instructors "
+                "see only the combined results for the whole class, and they see "
+                "them after marks are in.\n"
+            ),
+        )
+    )

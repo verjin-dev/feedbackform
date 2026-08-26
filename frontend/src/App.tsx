@@ -17,6 +17,7 @@ import {
 import { AssignmentsPage } from '@/routes/admin/AssignmentsPage';
 import { ImportPage } from '@/routes/admin/ImportPage';
 import { OverviewPage } from '@/routes/admin/OverviewPage';
+import { ParticipationPage } from '@/routes/admin/ParticipationPage';
 import { QuestionnairePage } from '@/routes/admin/QuestionnairePage';
 import { ReportsPage } from '@/routes/admin/ReportsPage';
 import {
@@ -62,6 +63,7 @@ export function App() {
           <Route path="/admin/students" element={<StudentsPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
           <Route path="/admin/import" element={<ImportPage />} />
+          <Route path="/admin/participation" element={<ParticipationPage />} />
           <Route path="/admin/reports" element={<ReportsPage />} />
         </Route>
       </Route>

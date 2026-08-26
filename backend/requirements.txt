@@ -9,6 +9,7 @@ psycopg[binary]==3.2.3
 argon2-cffi==23.1.0
 pyjwt==2.10.1
 python-multipart==0.0.20
+segno==1.6.6
 
 # Development and test
 pytest==8.3.4

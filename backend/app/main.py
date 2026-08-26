@@ -8,6 +8,7 @@ from app.api.routes import (
     assignments,
     auth,
     evaluations,
+    participation,
     reference,
     reports,
 )
@@ -53,6 +54,7 @@ app.include_router(accounts.router)
 app.include_router(assignments.router)
 app.include_router(evaluations.router)
 app.include_router(reports.router)
+app.include_router(participation.router)
 
 
 @app.get("/health", tags=["meta"])

@@ -24,6 +24,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { to: '/admin/students', label: 'Students' },
     { to: '/admin/users', label: 'Administrators' },
     { to: '/admin/import', label: 'Bulk import' },
+    { to: '/admin/participation', label: 'Participation' },
     { to: '/admin/reports', label: 'Reports' },
   ],
   faculty: [{ to: '/results', label: 'My results' }],
