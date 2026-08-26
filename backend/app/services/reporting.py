@@ -33,6 +33,23 @@ from app.models import (
 
 RATINGS = (1, 2, 3, 4, 5)
 
+# Below this many responses no mean is published at all.
+#
+# A mean of seven self-selected opinions, printed to two decimal places beside
+# one drawn from twenty-eight, claims a precision it does not have. The count
+# is shown instead. Five is a judgement rather than a statistical threshold:
+# low enough to keep small electives usable, high enough that one strong
+# opinion cannot carry the figure.
+MIN_RESPONSES_FOR_MEAN = 5
+
+# Above the threshold but below this share of the class, the mean is published
+# and flagged: it is real, but it is a minority speaking.
+LOW_RESPONSE_RATE = 0.30
+
+INSUFFICIENT = "insufficient"
+LOW = "low"
+ADEQUATE = "adequate"
+
 
 def _safe_ratio(numerator: int, denominator: int) -> float | None:
     if denominator <= 0:
@@ -46,6 +63,37 @@ def _mean_from_counts(counts: dict[int, int]) -> float | None:
         return None
     weighted = sum(rating * count for rating, count in counts.items())
     return round(weighted / total, 3)
+
+
+def _interval_from_counts(counts: dict[int, int]) -> tuple[float, float] | None:
+    """A 95% interval for the mean, clamped to the 1-5 scale.
+
+    Reported alongside the mean so the width of the estimate is visible. With
+    six responses the interval is wide enough to make the point on its own,
+    which is the reason for showing it rather than a bare number.
+    """
+    total = sum(counts.values())
+    mean = _mean_from_counts(counts)
+    if mean is None or total < 2:
+        return None
+
+    variance = sum(count * (rating - mean) ** 2 for rating, count in counts.items()) / (
+        total - 1
+    )
+    standard_error = (variance / total) ** 0.5
+    margin = 1.96 * standard_error
+    return (
+        round(max(1.0, mean - margin), 2),
+        round(min(5.0, mean + margin), 2),
+    )
+
+
+def _reliability(responses: int, response_rate: float | None) -> str:
+    if responses < MIN_RESPONSES_FOR_MEAN:
+        return INSUFFICIENT
+    if response_rate is not None and response_rate < LOW_RESPONSE_RATE:
+        return LOW
+    return ADEQUATE
 
 
 def _mean_of(values: list[float]) -> float | None:
@@ -143,6 +191,8 @@ def term_questionnaire(db: Session, term_id: int) -> list[tuple[Criterion, list[
 
 def _build_question_report(question: Question, counts: dict[int, int]) -> dict:
     responses = sum(counts.values())
+    publishable = responses >= MIN_RESPONSES_FOR_MEAN
+
     return {
         "question_id": question.id,
         "text": question.text,
@@ -154,7 +204,12 @@ def _build_question_report(question: Question, counts: dict[int, int]) -> dict:
             for rating in RATINGS
         },
         "responses": responses,
-        "mean": _mean_from_counts(counts),
+        # Withheld below the threshold rather than printed imprecisely. The
+        # distribution is still returned: a reader can see the shape of four
+        # answers without being handed a figure that looks authoritative.
+        "mean": _mean_from_counts(counts) if publishable else None,
+        "mean_range": _interval_from_counts(counts) if publishable else None,
+        "reliability": _reliability(responses, None),
     }
 
 
@@ -201,6 +256,9 @@ def build_faculty_report(db: Session, faculty: Account, term: AcademicTerm) -> d
 
         answered = responses.get(assignment.id, 0)
         eligible_here = eligible.get(assignment.class_group_id, 0)
+        rate = _safe_ratio(answered, eligible_here)
+        reliability = _reliability(answered, rate)
+        publishable = answered >= MIN_RESPONSES_FOR_MEAN
 
         assignment_reports.append(
             {
@@ -212,10 +270,13 @@ def build_faculty_report(db: Session, faculty: Account, term: AcademicTerm) -> d
                 "class_label": assignment.class_group.label,
                 "eligible_students": eligible_here,
                 "responses": answered,
-                "response_rate": _safe_ratio(answered, eligible_here),
+                "response_rate": rate,
+                "reliability": reliability,
                 "criteria": criteria_reports,
-                "mean": _mean_of(
-                    [c["mean"] for c in criteria_reports if c["mean"] is not None]
+                "mean": (
+                    _mean_of([c["mean"] for c in criteria_reports if c["mean"] is not None])
+                    if publishable
+                    else None
                 ),
             }
         )

@@ -1,6 +1,11 @@
-import type { AssignmentReport, FacultyReport, QuestionReport } from '@/api/types';
+import type {
+  AssignmentReport,
+  FacultyReport,
+  QuestionReport,
+  Reliability,
+} from '@/api/types';
 import { Badge } from '@/components/DataTable';
-import { Card } from '@/components/ui';
+import { Alert, Card } from '@/components/ui';
 
 const RATINGS = ['1', '2', '3', '4', '5'] as const;
 
@@ -13,15 +18,44 @@ const SHADES: Record<string, string> = {
 };
 
 /**
- * null means nobody answered.
+ * A mean, or an explanation of why there isn't one.
  *
- * Rendering it as 0.00 would read as a unanimous worst score. The legacy
- * report avoided the problem by omitting unanswered questions entirely, which
- * made a barely answered questionnaire look complete.
+ * `mean` is null in two different situations and they must not look alike:
+ * nobody answered, or too few answered for a figure to be honest. Rendering
+ * either as 0.00 would read as a unanimous worst score; rendering either as a
+ * blank cell hides that data exists.
  */
-export function Mean({ value }: { value: number | null }) {
-  if (value === null) return <span className="text-ink-400">No responses</span>;
-  return <span className="font-medium tabular-nums">{value.toFixed(2)}</span>;
+export function Mean({
+  value,
+  responses,
+  range,
+}: {
+  value: number | null;
+  responses?: number;
+  range?: [number, number] | null;
+}) {
+  if (value === null) {
+    if (responses !== undefined && responses > 0) {
+      return (
+        <span className="text-ink-400">
+          Too few to average
+          <span className="ml-1 tabular-nums">({responses})</span>
+        </span>
+      );
+    }
+    return <span className="text-ink-400">No responses</span>;
+  }
+
+  return (
+    <span className="whitespace-nowrap">
+      <span className="font-medium tabular-nums">{value.toFixed(2)}</span>
+      {range && range[1] - range[0] > 0.01 ? (
+        <span className="ml-1 text-xs tabular-nums text-ink-400">
+          ({range[0].toFixed(1)}–{range[1].toFixed(1)})
+        </span>
+      ) : null}
+    </span>
+  );
 }
 
 export function Rate({ value }: { value: number | null }) {
@@ -29,6 +63,36 @@ export function Rate({ value }: { value: number | null }) {
   const percent = value * 100;
   const tone = percent >= 60 ? 'positive' : percent >= 30 ? 'caution' : 'critical';
   return <Badge tone={tone}>{percent.toFixed(0)}%</Badge>;
+}
+
+/** States plainly how much weight the numbers below can carry. */
+export function ReliabilityNote({
+  reliability,
+  responses,
+  eligible,
+}: {
+  reliability: Reliability;
+  responses: number;
+  eligible: number;
+}) {
+  if (reliability === 'adequate') return null;
+
+  if (reliability === 'insufficient') {
+    return (
+      <Alert tone="caution">
+        {responses === 0
+          ? 'Nobody has responded yet, so there is nothing to average.'
+          : `Only ${responses} ${responses === 1 ? 'person has' : 'people have'} responded. That is too few to publish an average — the distributions below show what was said, but one more answer would move any figure substantially.`}
+      </Alert>
+    );
+  }
+
+  return (
+    <Alert tone="caution">
+      {responses} of {eligible} students responded. The averages below are real,
+      but they come from a minority of the class and may not represent it.
+    </Alert>
+  );
 }
 
 /** The shape of the answers, without making anyone read five numbers. */
@@ -62,33 +126,41 @@ function Distribution({ question }: { question: QuestionReport }) {
 export function AssignmentSection({ report }: { report: AssignmentReport }) {
   return (
     <Card title={`${report.subject_code} — ${report.subject_name} · ${report.class_label}`}>
-      <dl className="mb-4 flex flex-wrap gap-x-8 gap-y-2 text-sm">
-        <div>
-          <dt className="text-xs uppercase text-ink-500">Overall</dt>
-          <dd>
-            <Mean value={report.mean} />
-          </dd>
-        </div>
-        <div>
-          <dt className="text-xs uppercase text-ink-500">Responses</dt>
-          <dd className="tabular-nums">
-            {report.responses} of {report.eligible_students}
-          </dd>
-        </div>
-        <div>
-          <dt className="text-xs uppercase text-ink-500">Response rate</dt>
-          <dd>
-            <Rate value={report.response_rate} />
-          </dd>
-        </div>
-      </dl>
+      <div className="mb-4 flex flex-col gap-3">
+        <ReliabilityNote
+          reliability={report.reliability}
+          responses={report.responses}
+          eligible={report.eligible_students}
+        />
+
+        <dl className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
+          <div>
+            <dt className="text-xs uppercase text-ink-500">Overall</dt>
+            <dd>
+              <Mean value={report.mean} responses={report.responses} />
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase text-ink-500">Responses</dt>
+            <dd className="tabular-nums">
+              {report.responses} of {report.eligible_students}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-xs uppercase text-ink-500">Response rate</dt>
+            <dd>
+              <Rate value={report.response_rate} />
+            </dd>
+          </div>
+        </dl>
+      </div>
 
       <div className="flex flex-col gap-5">
         {report.criteria.map((criterion) => (
           <section key={criterion.criterion_id}>
             <header className="mb-2 flex items-baseline justify-between border-b border-ink-100 pb-1">
               <h3 className="text-sm font-semibold text-ink-800">{criterion.name}</h3>
-              <Mean value={criterion.mean} />
+              <Mean value={criterion.mean} responses={report.responses} />
             </header>
 
             <div className="overflow-x-auto">
@@ -114,7 +186,11 @@ export function AssignmentSection({ report }: { report: AssignmentReport }) {
                         <Distribution question={question} />
                       </td>
                       <td className="py-2 text-right">
-                        <Mean value={question.mean} />
+                        <Mean
+                          value={question.mean}
+                          responses={question.responses}
+                          range={question.mean_range}
+                        />
                       </td>
                     </tr>
                   ))}

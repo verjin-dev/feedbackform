@@ -42,6 +42,16 @@ def _record(session, fixtures, ratings: list[int], student: Account | None = Non
     session.commit()
 
 
+def _record_many(session, fixtures, rows: list[list[int]]):
+    """Record one response per row, each from a different student, so the
+    sample clears MIN_RESPONSES_FOR_MEAN."""
+    for index, ratings in enumerate(rows):
+        student = (
+            fixtures["student"] if index == 0 else _extra_student(session, fixtures, index)
+        )
+        _record(session, fixtures, ratings, student=student)
+
+
 def _extra_student(session, fixtures, n: int) -> Account:
     account = Account(
         role=Role.student,
@@ -100,27 +110,26 @@ class TestEmptyReports:
 
 
 class TestArithmetic:
-    def test_a_single_response_produces_its_own_ratings_as_the_mean(
-        self, session, fixtures
-    ):
-        _record(session, fixtures, [5, 3])
+    def test_a_unanimous_sample_reports_that_value(self, session, fixtures):
+        _record_many(session, fixtures, [[5, 3]] * 5)
 
         report = build_faculty_report(session, fixtures["faculty"], fixtures["term"])
         questions = report["assignments"][0]["criteria"][0]["questions"]
 
         assert questions[0]["mean"] == 5.0
         assert questions[1]["mean"] == 3.0
-        assert questions[0]["counts"]["5"] == 1
+        assert questions[0]["counts"]["5"] == 5
 
     def test_means_average_across_responses(self, session, fixtures):
-        _record(session, fixtures, [5, 5])
-        _record(session, fixtures, [3, 1], student=_extra_student(session, fixtures, 1))
+        _record_many(
+            session, fixtures, [[5, 5], [5, 5], [3, 1], [3, 1], [4, 3]]
+        )
 
         report = build_faculty_report(session, fixtures["faculty"], fixtures["term"])
         questions = report["assignments"][0]["criteria"][0]["questions"]
 
-        assert questions[0]["mean"] == 4.0  # (5 + 3) / 2
-        assert questions[1]["mean"] == 3.0  # (5 + 1) / 2
+        assert questions[0]["mean"] == 4.0  # (5+5+3+3+4) / 5
+        assert questions[1]["mean"] == 3.0  # (5+5+1+1+3) / 5
 
     def test_percentages_are_of_that_questions_responses(self, session, fixtures):
         _record(session, fixtures, [5, 5])
@@ -136,7 +145,7 @@ class TestArithmetic:
         assert sum(first["percentages"].values()) == pytest.approx(100.0, abs=0.01)
 
     def test_the_criterion_mean_averages_its_questions(self, session, fixtures):
-        _record(session, fixtures, [5, 3])
+        _record_many(session, fixtures, [[5, 3]] * 5)
 
         report = build_faculty_report(session, fixtures["faculty"], fixtures["term"])
         assert report["assignments"][0]["criteria"][0]["mean"] == 4.0
@@ -246,3 +255,100 @@ class TestAnonymityInReports:
         assert str(student.school_id) not in body
         assert "student_id" not in body
         assert "response_id" not in body
+
+
+class TestSmallSampleHonesty:
+    """Seven self-selected opinions and twenty-eight are not the same evidence,
+    and the report must not present them identically."""
+
+    def test_four_responses_publish_no_mean(self, session, fixtures):
+        _record_many(session, fixtures, [[5, 5], [5, 5], [4, 4], [4, 4]])
+
+        report = build_faculty_report(session, fixtures["faculty"], fixtures["term"])
+        assignment = report["assignments"][0]
+        question = assignment["criteria"][0]["questions"][0]
+
+        assert question["responses"] == 4
+        assert question["mean"] is None
+        assert question["reliability"] == "insufficient"
+        assert assignment["mean"] is None
+
+    def test_the_distribution_is_still_returned_below_the_threshold(
+        self, session, fixtures
+    ):
+        """Withholding the mean is not the same as withholding the data. A
+        reader can still see the shape of four answers."""
+        _record_many(session, fixtures, [[5, 5], [5, 5], [1, 1], [1, 1]])
+
+        report = build_faculty_report(session, fixtures["faculty"], fixtures["term"])
+        question = report["assignments"][0]["criteria"][0]["questions"][0]
+
+        assert question["counts"] == {"1": 2, "2": 0, "3": 0, "4": 0, "5": 2}
+        assert question["mean"] is None
+
+    def test_five_responses_publish_a_mean(self, session, fixtures):
+        _record_many(session, fixtures, [[4, 4]] * 5)
+
+        report = build_faculty_report(session, fixtures["faculty"], fixtures["term"])
+        question = report["assignments"][0]["criteria"][0]["questions"][0]
+
+        assert question["responses"] == 5
+        assert question["mean"] == 4.0
+        assert question["reliability"] != "insufficient"
+
+    def test_a_published_mean_carries_an_interval(self, session, fixtures):
+        _record_many(session, fixtures, [[5, 5], [4, 4], [3, 3], [5, 5], [2, 2]])
+
+        report = build_faculty_report(session, fixtures["faculty"], fixtures["term"])
+        question = report["assignments"][0]["criteria"][0]["questions"][0]
+
+        low, high = question["mean_range"]
+        assert low < question["mean"] < high
+        # A spread of 2-5 over five people is not a precise estimate, and the
+        # interval should say so rather than the mean implying otherwise.
+        assert high - low > 1.0
+
+    def test_a_unanimous_sample_has_a_zero_width_interval(self, session, fixtures):
+        _record_many(session, fixtures, [[4, 4]] * 6)
+
+        report = build_faculty_report(session, fixtures["faculty"], fixtures["term"])
+        question = report["assignments"][0]["criteria"][0]["questions"][0]
+
+        assert question["mean_range"] == (4.0, 4.0)
+
+    def test_the_interval_never_leaves_the_scale(self, session, fixtures):
+        """A mean of 5.0 must not report an upper bound of 5.4."""
+        _record_many(session, fixtures, [[5, 5]] * 5 + [[4, 4]])
+
+        report = build_faculty_report(session, fixtures["faculty"], fixtures["term"])
+        question = report["assignments"][0]["criteria"][0]["questions"][0]
+
+        low, high = question["mean_range"]
+        assert 1.0 <= low <= high <= 5.0
+
+    def test_a_healthy_sample_is_adequate(self, session, fixtures):
+        # Six responses from a class of six.
+        _record_many(session, fixtures, [[4, 4]] * 6)
+
+        report = build_faculty_report(session, fixtures["faculty"], fixtures["term"])
+        assert report["assignments"][0]["reliability"] == "adequate"
+
+    def test_enough_responses_but_a_thin_share_of_the_class_is_flagged_low(
+        self, session, fixtures
+    ):
+        """The thesis case: a real mean, from a small minority of the class."""
+        # Offset the ids: _record_many creates students 1..5 of its own.
+        for n in range(100, 129):
+            _extra_student(session, fixtures, n)
+        _record_many(session, fixtures, [[4, 4]] * 6)
+
+        report = build_faculty_report(session, fixtures["faculty"], fixtures["term"])
+        assignment = report["assignments"][0]
+
+        assert assignment["responses"] == 6
+        # 29 offset students, the fixture student, and the five _record_many made.
+        assert assignment["eligible_students"] == 35
+        assert assignment["mean"] == 4.0
+        # A real mean, from 17% of the class.
+        assert assignment["response_rate"] < 0.3
+        assert assignment["reliability"] == "low"

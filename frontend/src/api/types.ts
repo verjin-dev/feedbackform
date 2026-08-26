@@ -88,7 +88,15 @@ export interface Questionnaire {
   criteria: QuestionnaireBlock[];
 }
 
-/** `mean` is null, never 0, when nothing was answered. */
+/** How much weight the figures on a row can carry.
+ *  - insufficient: too few responses for a mean to be published at all
+ *  - low:          a real mean, but from a small share of the class
+ *  - adequate:     enough people, and enough of the class */
+export type Reliability = 'insufficient' | 'low' | 'adequate';
+
+/** `mean` is null in two cases: nothing was answered, or too few people
+ *  answered for a mean to be honest. `responses` and `reliability` separate
+ *  them — the UI must not render both as a blank cell. */
 export interface QuestionReport {
   question_id: number;
   text: string;
@@ -96,6 +104,8 @@ export interface QuestionReport {
   percentages: Record<string, number>;
   responses: number;
   mean: number | null;
+  mean_range: [number, number] | null;
+  reliability: Reliability;
 }
 
 export interface CriterionReport {
@@ -115,6 +125,7 @@ export interface AssignmentReport {
   eligible_students: number;
   responses: number;
   response_rate: number | null;
+  reliability: Reliability;
   criteria: CriterionReport[];
   mean: number | null;
 }

@@ -13,10 +13,19 @@ class QuestionReport(BaseModel):
 
     responses: int
 
-    # None, not 0.0, when nothing was answered. A question nobody rated is not
-    # a question rated zero, and the legacy report dropped such questions from
-    # the output entirely — so a sparse criterion read as a complete one.
+    # None in two distinct cases, both meaning "no figure to publish":
+    # nothing was answered, or too few people answered for a mean to be honest.
+    # `reliability` and `responses` tell them apart. A question nobody rated is
+    # not a question rated zero, and the legacy report dropped such questions
+    # from the output entirely — so a sparse criterion read as a complete one.
     mean: float | None
+
+    # 95% interval for the mean, clamped to the 1-5 scale. Present only when a
+    # mean is published; its width is the point.
+    mean_range: tuple[float, float] | None = None
+
+    # "insufficient" | "low" | "adequate"
+    reliability: str = "insufficient"
 
 
 class CriterionReport(BaseModel):
@@ -37,6 +46,7 @@ class AssignmentReport(BaseModel):
     eligible_students: int
     responses: int
     response_rate: float | None
+    reliability: str = "insufficient"
 
     criteria: list[CriterionReport]
     mean: float | None
