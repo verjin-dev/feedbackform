@@ -1,4 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    status,
+)
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -6,7 +15,10 @@ from app.api.deps import SESSION_COOKIE, get_current_account
 from app.core.config import get_settings
 from app.core.database import get_session
 from app.core.security import (
+    RESET_PURPOSE,
     create_access_token,
+    credential_fingerprint,
+    decode_link_token,
     hash_password,
     needs_rehash,
     verify_legacy_md5,
@@ -14,7 +26,15 @@ from app.core.security import (
 )
 from app.core.throttle import login_throttle
 from app.models.account import Account
-from app.schemas.auth import AccountOut, LoginRequest, PasswordChangeRequest
+from app.schemas.auth import (
+    AccountOut,
+    LoginRequest,
+    PasswordChangeRequest,
+    PasswordResetConfirm,
+    PasswordResetRequest,
+    TokenCheck,
+)
+from app.services import notifications
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 settings = get_settings()
@@ -130,3 +150,101 @@ def change_password(
     # Re-issue so the change extends the session rather than leaving the user
     # on a cookie minted before it.
     _issue_session(response, account)
+
+
+# --- Password reset and invitations ----------------------------------------
+
+# Reset requests are throttled by address as well as by IP: without it, this is
+# a way to mail-bomb a known address for free.
+def _reset_key(request: Request, email: str) -> str:
+    host = request.client.host if request.client else "unknown"
+    return f"reset:{host}:{email.lower()}"
+
+
+@router.post("/password-reset/request", status_code=status.HTTP_202_ACCEPTED)
+def request_password_reset(
+    payload: PasswordResetRequest,
+    request: Request,
+    background: BackgroundTasks,
+    db: Session = Depends(get_session),
+) -> dict[str, str]:
+    """Always answers the same way.
+
+    Confirming whether an address is registered turns this into an account
+    enumeration endpoint, so an unknown address, a deactivated account and a
+    successful send are indistinguishable from outside. The mail goes out in
+    the background for the same reason: a slow or failing SMTP server must not
+    change the response time.
+    """
+    account = db.scalar(
+        select(Account).where(func.lower(Account.email) == payload.email.lower())
+    )
+
+    key = _reset_key(request, payload.email)
+    if not login_throttle.is_blocked(key):
+        login_throttle.record_failure(key)
+        if account is not None and account.is_active:
+            background.add_task(notifications.send_password_reset, account)
+
+    return {
+        "detail": "If that address has an account, a reset link is on its way."
+    }
+
+
+def _account_for_token(db: Session, token: str, purpose: str) -> Account | None:
+    claims = decode_link_token(token, purpose)
+    if claims is None:
+        return None
+
+    account = db.get(Account, int(claims["sub"]))
+    if account is None or not account.is_active:
+        return None
+
+    # The fingerprint is what makes the link single-use: it stops matching the
+    # moment the password changes, including when this very link set it.
+    current = credential_fingerprint(account.password_hash, account.legacy_md5)
+    if claims.get("fp") != current:
+        return None
+
+    return account
+
+
+@router.get("/password-reset/check", response_model=TokenCheck)
+def check_reset_token(
+    token: str = Query(...),
+    purpose: str = Query(RESET_PURPOSE, pattern="^(password-reset|invitation)$"),
+    db: Session = Depends(get_session),
+) -> TokenCheck:
+    """So the page can say "this link has expired" before someone types a new
+    password into a form that is going to reject it."""
+    account = _account_for_token(db, token, purpose)
+    if account is None:
+        return TokenCheck(valid=False)
+    return TokenCheck(
+        valid=True, email=account.email, first_name=account.first_name
+    )
+
+
+@router.post("/password-reset/confirm", status_code=status.HTTP_204_NO_CONTENT)
+def confirm_password_reset(
+    payload: PasswordResetConfirm,
+    purpose: str = Query(RESET_PURPOSE, pattern="^(password-reset|invitation)$"),
+    db: Session = Depends(get_session),
+) -> None:
+    account = _account_for_token(db, payload.token, purpose)
+    if account is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "That link has expired or has already been used. "
+                "Request a new one."
+            ),
+        )
+
+    account.password_hash = hash_password(payload.new_password)
+    account.legacy_md5 = None
+    db.commit()
+
+    # Deliberately does not sign the user in. Redeeming a link proves control
+    # of the mailbox, not of the account, and the next step is a login they can
+    # confirm the new password with.

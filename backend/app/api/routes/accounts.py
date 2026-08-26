@@ -1,4 +1,13 @@
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -10,7 +19,7 @@ from app.models import Account, ClassGroup, Role
 from app.schemas.auth import AccountOut
 from app.schemas.import_ import ImportReportOut
 from app.schemas.management import AccountCreate, AccountUpdate
-from app.services import account_import
+from app.services import account_import, notifications
 
 router = APIRouter(
     prefix="/accounts", tags=["accounts"], dependencies=[Depends(require_admin)]
@@ -50,14 +59,28 @@ def list_accounts(
 
 
 @router.post("", response_model=AccountOut, status_code=status.HTTP_201_CREATED)
-def create_account(payload: AccountCreate, db: Session = Depends(get_session)):
+def create_account(
+    payload: AccountCreate,
+    background: BackgroundTasks,
+    invite: bool = Query(
+        False, description="Email a set-password link instead of using the password."
+    ),
+    db: Session = Depends(get_session),
+    actor: Account = Depends(get_current_account),
+):
     if payload.class_group_id is not None:
         crud.get_or_404(db, ClassGroup, payload.class_group_id)
 
     data = payload.model_dump(exclude={"password"})
     data["email"] = data["email"].lower()
     data["password_hash"] = hash_password(payload.password)
-    return crud.create(db, Account, data, DUPLICATE)
+    account = crud.create(db, Account, data, DUPLICATE)
+
+    if invite:
+        background.add_task(
+            notifications.send_invitation, account, invited_by=actor.full_name
+        )
+    return account
 
 
 @router.get("/{account_id}", response_model=AccountOut)
@@ -132,10 +155,19 @@ MAX_IMPORT_BYTES = 2 * 1024 * 1024
 
 @router.post("/import", response_model=ImportReportOut)
 async def import_accounts(
+    background: BackgroundTasks,
     file: UploadFile = File(...),
     dry_run: bool = Query(True, description="Report only. Set false to write."),
     on_existing: str = Query("skip", pattern="^(skip|update)$"),
+    invite: bool = Query(
+        True,
+        description=(
+            "Email each new account a set-password link. When on, no password "
+            "is generated or shown."
+        ),
+    ),
     db: Session = Depends(get_session),
+    actor: Account = Depends(get_current_account),
 ):
     """Bulk-create accounts from a CSV.
 
@@ -154,7 +186,7 @@ async def import_accounts(
         )
 
     report = account_import.build_report(
-        db, content, dry_run=dry_run, on_existing=on_existing
+        db, content, dry_run=dry_run, on_existing=on_existing, invite=invite
     )
 
     if not dry_run:
@@ -167,7 +199,15 @@ async def import_accounts(
                     "Nothing was imported. Run it as a dry run to see them all."
                 ),
             )
-        account_import.apply(db, content, report, on_existing=on_existing)
+        created = account_import.apply(db, content, report, on_existing=on_existing)
+        if invite:
+            # One link each, in the background: a roll of four hundred must not
+            # hold the request open, and a bounced address must not fail the
+            # import that already succeeded.
+            for account in created:
+                background.add_task(
+                    notifications.send_invitation, account, invited_by=actor.full_name
+                )
 
     return ImportReportOut(
         dry_run=dry_run,

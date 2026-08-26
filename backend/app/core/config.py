@@ -32,6 +32,30 @@ class Settings(BaseSettings):
     # by default; the real origin is set per environment.
     cors_origins: list[str] = ["http://localhost:5173"]
 
+    # Where the app is served from. Used to build the links in emails, so it
+    # must be the address a recipient can actually open — not the API's.
+    app_base_url: str = "http://localhost:5173"
+
+    # "console" prints to the log and sends nothing, which is the right default:
+    # a misconfigured deployment should fail to deliver visibly rather than mail
+    # real students by accident. "memory" is for tests. "smtp" actually sends.
+    email_backend: Literal["console", "memory", "smtp"] = "console"
+    email_from: str = "Faculty Evaluation <no-reply@example.edu>"
+    email_reply_to: str | None = None
+
+    smtp_host: str = "localhost"
+    smtp_port: int = 587
+    smtp_user: str | None = None
+    smtp_password: str | None = None
+    smtp_use_tls: bool = True
+    smtp_timeout: int = 15
+
+    # How long a link stays good. A reset is short because it is a live
+    # credential; an invitation is long because it is sent in bulk and people
+    # open it when they get round to it.
+    password_reset_ttl_minutes: int = 60
+    invitation_ttl_hours: int = 24 * 7
+
     @property
     def is_production(self) -> bool:
         return self.environment == "production"

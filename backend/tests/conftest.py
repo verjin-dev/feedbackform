@@ -193,3 +193,15 @@ def student_client(client: TestClient, fixtures: dict, session: Session) -> Test
     )
     assert response.status_code == 200, response.text
     return client
+
+
+@pytest.fixture(autouse=True)
+def outbox():
+    """Every test gets a capturing mailer, so none can reach a real server and
+    any of them can read what was sent."""
+    from app.core.email import MemoryMailer, set_mailer
+
+    mailer = MemoryMailer()
+    set_mailer(mailer)
+    yield mailer.outbox
+    set_mailer(None)

@@ -6,6 +6,10 @@ import { landingFor } from '@/auth/landing';
 import { AppShell } from '@/components/AppShell';
 import { LoginPage } from '@/routes/LoginPage';
 import {
+  ForgotPasswordPage,
+  SetPasswordPage,
+} from '@/routes/PasswordResetPages';
+import {
   AdminUsersPage,
   FacultyPage,
   StudentsPage,
@@ -40,6 +44,9 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<SetPasswordPage mode="reset" />} />
+      <Route path="/set-password" element={<SetPasswordPage mode="invite" />} />
       <Route path="/" element={<RootRedirect />} />
 
       <Route element={<RequireRole allow={ADMIN} />}>

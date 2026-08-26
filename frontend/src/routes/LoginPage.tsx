@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 
 import { ApiError } from '@/api/client';
 import { landingFor } from '@/auth/landing';
@@ -84,6 +84,13 @@ export function LoginPage() {
           <Button type="submit" loading={submitting}>
             {submitting ? 'Signing in' : 'Sign in'}
           </Button>
+
+          <Link
+            to="/forgot-password"
+            className="text-center text-sm text-accent-600 hover:underline"
+          >
+            Forgotten your password?
+          </Link>
         </form>
 
         {/* The legacy form asked people to pick "Student / Faculty /

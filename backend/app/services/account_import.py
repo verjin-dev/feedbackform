@@ -165,6 +165,7 @@ def build_report(
     *,
     dry_run: bool = True,
     on_existing: str = "skip",
+    invite: bool = True,
 ) -> ImportReport:
     rows, file_errors = parse(content)
     report = ImportReport(dry_run=dry_run, file_errors=file_errors)
@@ -287,7 +288,10 @@ def build_report(
             continue
 
         result.action = "create"
-        if not row.get("password"):
+        # A generated password is only shown when there is no other way to hand
+        # the account over. With invitations on, the person sets their own and
+        # nothing needs to be printed, copied or passed along.
+        if not invite and not row.get("password"):
             result.generated_password = generate_password()
         report.rows.append(result)
 
@@ -300,11 +304,12 @@ def apply(
     report: ImportReport,
     *,
     on_existing: str = "skip",
-) -> None:
+) -> list[Account]:
     """Writes the rows the report marked create or update.
 
     Called only after build_report found no errors, and in one transaction:
-    a partial roll is worse than none, because the gap is invisible.
+    a partial roll is worse than none, because the gap is invisible. Returns
+    the accounts created, so the caller can invite them.
     """
     rows, _ = parse(content)
     by_line = {int(row["__line"]): row for row in rows}
@@ -318,6 +323,8 @@ def apply(
         ): group
         for group in db.scalars(select(ClassGroup)).all()
     }
+
+    created: list[Account] = []
 
     for line, decision in sorted(decisions.items()):
         if decision.action not in ("create", "update"):
@@ -350,17 +357,23 @@ def apply(
                 account.class_group_id = group.id
             continue
 
+        # Every account gets a real credential even when it is never told to
+        # anyone: a random one that nobody knows is strictly better than a
+        # placeholder, and the invitation link is what makes it usable.
         password = row.get("password") or decision.generated_password or generate_password()
-        db.add(
-            Account(
-                role=role,
-                first_name=row["first_name"],
-                last_name=row["last_name"],
-                email=email,
-                school_id=row.get("school_id") or None,
-                password_hash=hash_password(password),
-                class_group_id=group.id if group else None,
-            )
+        account = Account(
+            role=role,
+            first_name=row["first_name"],
+            last_name=row["last_name"],
+            email=email,
+            school_id=row.get("school_id") or None,
+            password_hash=hash_password(password),
+            class_group_id=group.id if group else None,
         )
+        db.add(account)
+        created.append(account)
 
     db.commit()
+    for account in created:
+        db.refresh(account)
+    return created

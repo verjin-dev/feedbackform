@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -12,6 +14,16 @@ from app.api.routes import (
 from app.core.config import get_settings
 
 settings = get_settings()
+
+# Uvicorn configures its own loggers but leaves the root logger at WARNING, so
+# anything the application logs is dropped. That matters most for the console
+# mail backend, which exists precisely to be seen: without this, an unconfigured
+# deployment prints nothing at all, which is the silent failure the backend is
+# supposed to replace. basicConfig is a no-op when handlers already exist.
+logging.basicConfig(
+    level=logging.DEBUG if settings.debug else logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+)
 
 if settings.is_production and settings.secret_key == "insecure-local-only-key":
     raise RuntimeError(

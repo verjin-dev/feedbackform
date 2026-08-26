@@ -28,3 +28,21 @@ class AccountOut(BaseModel):
 class PasswordChangeRequest(BaseModel):
     current_password: str = Field(min_length=1, max_length=256)
     new_password: str = Field(min_length=12, max_length=256)
+
+
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    token: str
+    new_password: str = Field(min_length=12, max_length=256)
+
+
+class TokenCheck(BaseModel):
+    """Lets the page say "this link has expired" before someone types a new
+    password into a form that is going to reject it."""
+
+    valid: bool
+    email: str | None = None
+    first_name: str | None = None

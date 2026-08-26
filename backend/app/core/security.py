@@ -75,3 +75,51 @@ def decode_access_token(token: str) -> dict[str, Any] | None:
         return jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
     except jwt.PyJWTError:
         return None
+
+
+# --- Links sent by email ---------------------------------------------------
+
+RESET_PURPOSE = "password-reset"
+INVITE_PURPOSE = "invitation"
+
+
+def credential_fingerprint(password_hash: str | None, legacy_md5: str | None) -> str:
+    """A short digest of whatever credential the account currently holds.
+
+    Carried in reset and invitation links and re-checked when one is redeemed.
+    Setting a password changes the credential, so the fingerprint stops
+    matching and every outstanding link for that account dies — which makes
+    them single-use, and revokes them on any password change, without a table
+    to store or expire.
+    """
+    material = password_hash or legacy_md5 or ""
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()[:16]
+
+
+def create_link_token(
+    account_id: int, purpose: str, fingerprint: str, ttl_seconds: int
+) -> str:
+    now = datetime.now(UTC)
+    return jwt.encode(
+        {
+            "sub": str(account_id),
+            "purpose": purpose,
+            "fp": fingerprint,
+            "iat": int(now.timestamp()),
+            "exp": int((now + timedelta(seconds=ttl_seconds)).timestamp()),
+        },
+        settings.secret_key,
+        algorithm=ALGORITHM,
+    )
+
+
+def decode_link_token(token: str, purpose: str) -> dict[str, Any] | None:
+    """Claims, or None. A token minted for one purpose is not valid for
+    another, so an invitation cannot be replayed as a session."""
+    try:
+        claims = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
+    except jwt.PyJWTError:
+        return None
+    if claims.get("purpose") != purpose:
+        return None
+    return claims

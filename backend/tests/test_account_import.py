@@ -218,11 +218,12 @@ class TestWriting:
         assert "Nothing was imported" in response.json()["detail"]
         assert session.query(Account).count() == before
 
-    def test_generated_passwords_are_returned_and_actually_work(
+    def test_without_invitations_a_password_is_generated_and_works(
         self, admin_client, fixtures
     ):
+        """The fallback for a college with no working outbound mail."""
         body = HEADER + "faculty,Ravi,Kumar,ravi@example.edu,F900,,,\n"
-        response = upload(admin_client, body, dry_run="false")
+        response = upload(admin_client, body, dry_run="false", invite="false")
 
         [row] = rows_of(response, "create")
         password = row["generated_password"]
@@ -231,6 +232,50 @@ class TestWriting:
         admin_client.post("/auth/logout")
         signed_in = admin_client.post(
             "/auth/login", json={"email": "ravi@example.edu", "password": password}
+        )
+        assert signed_in.status_code == 200
+
+    def test_invitations_are_the_default_and_no_password_is_shown(
+        self, admin_client, fixtures, outbox
+    ):
+        """A password nobody has to copy out of a browser is the point of
+        having email at all."""
+        body = HEADER + "faculty,Ravi,Kumar,ravi@example.edu,F900,,,\n"
+        response = upload(admin_client, body, dry_run="false")
+
+        [row] = rows_of(response, "create")
+        assert row["generated_password"] is None
+
+        [message] = [m for m in outbox if m.to == "ravi@example.edu"]
+        assert "/set-password?token=" in message.body
+
+    def test_a_dry_run_sends_no_invitations(self, admin_client, fixtures, outbox):
+        upload(admin_client, HEADER + "faculty,Ravi,Kumar,ravi@example.edu,F900,,,\n")
+
+        assert outbox == []
+
+    def test_an_invited_account_can_set_a_password_and_sign_in(
+        self, admin_client, fixtures, outbox
+    ):
+        upload(
+            admin_client,
+            HEADER + "faculty,Ravi,Kumar,ravi@example.edu,F900,,,\n",
+            dry_run="false",
+        )
+        [message] = [m for m in outbox if m.to == "ravi@example.edu"]
+        token = message.body.split("/set-password?token=")[1].split()[0]
+
+        admin_client.post("/auth/logout")
+        confirmed = admin_client.post(
+            "/auth/password-reset/confirm",
+            params={"purpose": "invitation"},
+            json={"token": token, "new_password": "a-password-i-chose"},
+        )
+        assert confirmed.status_code == 204
+
+        signed_in = admin_client.post(
+            "/auth/login",
+            json={"email": "ravi@example.edu", "password": "a-password-i-chose"},
         )
         assert signed_in.status_code == 200
 
