@@ -11,6 +11,7 @@ from app.api.routes import (
     exports,
     moderation,
     participation,
+    pulse,
     reference,
     reports,
 )
@@ -59,6 +60,7 @@ app.include_router(reports.router)
 app.include_router(participation.router)
 app.include_router(exports.router)
 app.include_router(moderation.router)
+app.include_router(pulse.router)
 
 
 @app.get("/health", tags=["meta"])

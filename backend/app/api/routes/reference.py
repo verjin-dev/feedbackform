@@ -13,8 +13,9 @@ from sqlalchemy.orm import Session
 from app.api import crud
 from app.api.deps import require_admin
 from app.core.database import get_session
-from app.models import AcademicTerm, ClassGroup, Criterion, Question, Subject
+from app.models import AcademicTerm, ClassGroup, Criterion, Question, Subject, TermStatus
 from app.models.base import Base
+from app.services import pulse as pulse_service
 from app.schemas.reference import (
     AcademicTermCreate,
     AcademicTermOut,
@@ -97,12 +98,22 @@ def update_term(
     term_id: int, payload: AcademicTermUpdate, db: Session = Depends(get_session)
 ):
     term = crud.get_or_404(db, AcademicTerm, term_id)
-    return crud.update(
-        db,
-        term,
-        payload.model_dump(exclude_unset=True),
-        "That year and semester already exists.",
+    data = payload.model_dump(exclude_unset=True)
+    closing = (
+        data.get("status") is TermStatus.closed and term.status is not TermStatus.closed
     )
+
+    updated = crud.update(
+        db, term, data, "That year and semester already exists."
+    )
+
+    if closing:
+        # Mid-term checks are formative and are not retained past the term they
+        # belong to. Keeping that promise in code is the whole reason an
+        # instructor can afford to ask an uncomfortable question in one.
+        pulse_service.purge_for_term(db, updated)
+
+    return updated
 
 
 @terms.delete("/{term_id}", status_code=status.HTTP_204_NO_CONTENT)

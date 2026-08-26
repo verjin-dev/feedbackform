@@ -28,6 +28,7 @@ import {
   CriteriaPage,
   SubjectsPage,
 } from '@/routes/admin/SimpleResources';
+import { PulsePage } from '@/routes/faculty/PulsePage';
 import { ResultsPage } from '@/routes/faculty/ResultsPage';
 import { NotFoundPage } from '@/routes/NotFoundPage';
 import { EvaluatePage } from '@/routes/student/EvaluatePage';
@@ -75,6 +76,7 @@ export function App() {
       <Route element={<RequireRole allow={FACULTY} />}>
         <Route element={<AppShell />}>
           <Route path="/results" element={<ResultsPage />} />
+          <Route path="/pulse" element={<PulsePage />} />
         </Route>
       </Route>
 

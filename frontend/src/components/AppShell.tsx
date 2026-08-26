@@ -29,7 +29,10 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
     { to: '/admin/reports', label: 'Reports' },
     { to: '/admin/exports', label: 'Accreditation' },
   ],
-  faculty: [{ to: '/results', label: 'My results' }],
+  faculty: [
+    { to: '/results', label: 'My results' },
+    { to: '/pulse', label: 'Mid-term check' },
+  ],
   student: [{ to: '/evaluate', label: 'Give feedback' }],
 };
 

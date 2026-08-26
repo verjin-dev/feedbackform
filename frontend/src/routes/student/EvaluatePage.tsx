@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ApiError, api } from '@/api/client';
 import type { CommentPrompt, PendingAssignment, Questionnaire } from '@/api/types';
 import { Alert, Button, Card, cx } from '@/components/ui';
+import { PulsePrompt } from '@/routes/student/PulsePrompt';
 
 const SCALE = [
   { value: 1, label: 'Poor' },
@@ -158,6 +159,8 @@ export function EvaluatePage() {
         </Alert>
       ) : null}
       {error ? <Alert>{error}</Alert> : null}
+
+      <PulsePrompt />
 
       <Card title="Subjects to review">
         <p className="mb-3 text-sm text-ink-500">

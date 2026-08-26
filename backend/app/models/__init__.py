@@ -10,6 +10,7 @@ from app.models.evaluation import (
     EvaluationResponse,
     EvaluationSubmission,
 )
+from app.models.pulse import PulseParticipation, PulseReply, PulseRound
 from app.models.questionnaire import Criterion, Question
 from app.models.reminder import ReminderLog
 
@@ -24,6 +25,9 @@ __all__ = [
     "EvaluationRating",
     "EvaluationResponse",
     "EvaluationSubmission",
+    "PulseParticipation",
+    "PulseReply",
+    "PulseRound",
     "Question",
     "ReminderLog",
     "Role",
