@@ -19,6 +19,7 @@ import { ExportsPage } from '@/routes/admin/ExportsPage';
 import { ImportPage } from '@/routes/admin/ImportPage';
 import { OverviewPage } from '@/routes/admin/OverviewPage';
 import { AuditPage } from '@/routes/admin/AuditPage';
+import { SignInLinksPage } from '@/routes/admin/SignInLinksPage';
 import { ModerationPage } from '@/routes/admin/ModerationPage';
 import { ParticipationPage } from '@/routes/admin/ParticipationPage';
 import { QuestionnairePage } from '@/routes/admin/QuestionnairePage';
@@ -72,6 +73,7 @@ export function App() {
           <Route path="/admin/reports" element={<ReportsPage />} />
           <Route path="/admin/exports" element={<ExportsPage />} />
           <Route path="/admin/audit" element={<AuditPage />} />
+          <Route path="/admin/sign-in" element={<SignInLinksPage />} />
         </Route>
       </Route>
 

@@ -15,6 +15,7 @@ from app.api.routes import (
     pulse,
     reference,
     reports,
+    sso,
 )
 from app.core.config import get_settings
 
@@ -53,6 +54,7 @@ app.add_middleware(
 
 
 app.include_router(auth.router)
+app.include_router(sso.router)
 app.include_router(audit.router)
 app.include_router(reference.router)
 app.include_router(accounts.router)

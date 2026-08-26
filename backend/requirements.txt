@@ -11,6 +11,11 @@ pyjwt==2.10.1
 python-multipart==0.0.20
 segno==1.6.6
 
+# Runtime, not just tests: college sign-in calls the identity provider's
+# discovery and token endpoints, and PyJWT needs cryptography to verify the
+# RS256 signature on an ID token.
+httpx==0.28.1
+cryptography==50.0.0
+
 # Development and test
 pytest==8.3.4
-httpx==0.28.1

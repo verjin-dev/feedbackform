@@ -61,6 +61,9 @@ AUDITED = {
     "ClassGroup",
     "Criterion",
     "EvaluationComment",
+    # Which college directory account may sign in as which account here. An
+    # access change if there ever was one.
+    "ExternalIdentity",
     "Question",
     "Subject",
     "TeachingAssignment",
@@ -84,7 +87,7 @@ def _is_redacted(model: str, field: str) -> bool:
     return field in REDACTED_ALWAYS or field in REDACTED_BY_MODEL.get(model, set())
 
 # Noise. Every row has these and they say nothing about intent.
-IGNORED_FIELDS = {"created_at", "updated_at"}
+IGNORED_FIELDS = {"created_at", "updated_at", "last_used_at"}
 
 
 def _describe(instance: Any) -> str:
@@ -103,6 +106,8 @@ def _describe(instance: Any) -> str:
         return f"Written feedback #{instance.id}"
     if name == "TeachingAssignment":
         return f"Assignment #{instance.id}"
+    if name == "ExternalIdentity":
+        return f"College sign-in linked to {instance.email_at_link}"
     if name == "Question":
         return f"Question: {(instance.text or '').strip()[:80]}"
 

@@ -6,6 +6,7 @@ from app.models.base import Base
 from app.models.catalog import ClassGroup, Subject
 from app.models.comment import EvaluationComment
 from app.models.enums import CommentPrompt, Role, TermStatus
+from app.models.identity import ExternalIdentity
 from app.models.evaluation import (
     EvaluationRating,
     EvaluationResponse,
@@ -27,6 +28,7 @@ __all__ = [
     "EvaluationRating",
     "EvaluationResponse",
     "EvaluationSubmission",
+    "ExternalIdentity",
     "PulseParticipation",
     "PulseReply",
     "PulseRound",

@@ -55,6 +55,39 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = True
     smtp_timeout: int = 15
 
+    # --- College sign-in (OpenID Connect) ---------------------------------
+    #
+    # Left unset, SSO is off and the sign-in page does not offer it. Configured
+    # by discovery URL rather than by provider name: Google Workspace and
+    # Microsoft 365 are both standard OIDC and differ only in these values, so
+    # the choice of provider is deployment configuration and not code.
+    #
+    #   Google:    https://accounts.google.com/.well-known/openid-configuration
+    #   Microsoft: https://login.microsoftonline.com/<tenant>/v2.0/
+    #              .well-known/openid-configuration
+    oidc_discovery_url: str | None = None
+    oidc_client_id: str | None = None
+    oidc_client_secret: str | None = None
+
+    # Addresses outside these domains are refused even when the provider
+    # authenticated them successfully. Both Google and Microsoft will happily
+    # sign in a personal account against a public client; the domain check is
+    # what makes this "the college's directory" rather than "anyone".
+    oidc_allowed_domains: list[str] = []
+
+    # Shown on the button. Named by the college, not by the vendor: staff
+    # recognise "ESEC staff account" faster than "Microsoft".
+    oidc_button_label: str = "your college account"
+
+    @property
+    def sso_enabled(self) -> bool:
+        return bool(
+            self.oidc_discovery_url
+            and self.oidc_client_id
+            and self.oidc_client_secret
+            and self.oidc_allowed_domains
+        )
+
     # How long a link stays good. A reset is short because it is a live
     # credential; an invitation is long because it is sent in bulk and people
     # open it when they get round to it.

@@ -163,6 +163,50 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ---
 
+## Turning on college sign-in
+
+Optional, and off until configured. Password sign-in is unaffected either way,
+which is deliberate: an identity-provider outage during an evaluation window
+would otherwise lock the college out of its own feedback in the one week it
+cannot wait.
+
+Staff only. Students have no college directory account and are refused here
+even when one exists for their address.
+
+- [ ] Register an OAuth client with the provider (Google Workspace or
+      Microsoft 365 — the application does not care which)
+- [ ] Set the redirect URI to exactly
+      `https://feedback.example.edu/api/auth/sso/callback` — the path is
+      `/api/...` because nginx proxies the API under it
+- [ ] Fill `OIDC_*` in the API environment file and restart
+- [ ] Confirm the sign-in page now shows the button, and that the password form
+      is still above it
+- [ ] Sign in once as a member of staff and confirm the link appears under
+      **College sign-in** in the admin screens
+- [ ] Sign in once with a personal account on the same provider and confirm it
+      is refused by the domain check
+
+An account is matched, never created. Somebody who is in the college directory
+but has no account here is told to ask an administrator, and nothing is
+created for them — the directory decides who is a member of the college, an
+administrator decides who has an account here, and letting the first decide the
+second is how "anyone in the domain" becomes "anyone with a login".
+
+### When somebody leaves
+
+Their address is often reassigned to their successor. The link is keyed on the
+provider's subject identifier rather than on the address, so the successor is
+**not** signed in as their predecessor — they are refused and told to ask an
+administrator.
+
+- [ ] On departure, unlink under **College sign-in**. It touches nothing else:
+      the account, its password, its assignments and everything past reports
+      were built from are untouched
+- [ ] Links whose address no longer matches the account are flagged on that
+      screen. Clearing them is routine housekeeping, not an incident
+
+---
+
 ## Before Tamil goes in front of students
 
 The interface strings in `frontend/src/i18n/strings.ts` and the two comment
