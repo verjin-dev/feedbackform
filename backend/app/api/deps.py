@@ -7,6 +7,7 @@ from app.core.database import get_session
 from app.core.security import decode_access_token
 from app.models.account import Account
 from app.models.enums import Role
+from app.services.audit import set_actor
 
 SESSION_COOKIE = "session"
 
@@ -32,6 +33,9 @@ def get_current_account(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
         )
+
+    # Anything this request changes is attributed to them.
+    set_actor(db, account)
 
     # The role is re-read from the database rather than trusted from the token,
     # so a role change takes effect immediately instead of on token expiry.

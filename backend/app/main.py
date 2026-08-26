@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import (
     accounts,
+    audit,
     assignments,
     auth,
     evaluations,
@@ -52,6 +53,7 @@ app.add_middleware(
 
 
 app.include_router(auth.router)
+app.include_router(audit.router)
 app.include_router(reference.router)
 app.include_router(accounts.router)
 app.include_router(assignments.router)
