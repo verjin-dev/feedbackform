@@ -88,7 +88,7 @@ export function PulsePrompt() {
       title={`Quick check: ${current.subject_code}`}
       actions={
         rounds.length > 1 ? (
-          <span className="text-xs text-ink-400">
+          <span className="text-xs text-faint">
             {rounds.length} waiting
           </span>
         ) : null
@@ -100,7 +100,7 @@ export function PulsePrompt() {
         </div>
       ) : null}
 
-      <p className="mb-4 max-w-prose text-sm text-ink-500">
+      <p className="mb-4 max-w-prose text-sm text-muted">
         {current.faculty_name} is asking how {current.subject_name} is going
         while there is still time to change it. Three questions, about twenty
         seconds. Only they see the answers, without your name, and they are
@@ -109,7 +109,7 @@ export function PulsePrompt() {
 
       <div className="flex flex-col gap-4">
         <fieldset>
-          <legend className="mb-2 text-sm text-ink-700">
+          <legend className="mb-2 text-sm text-body">
             How is the pace?
           </legend>
           <div className="flex flex-wrap gap-2">
@@ -119,8 +119,8 @@ export function PulsePrompt() {
                 className={cx(
                   'cursor-pointer rounded-md border px-3 py-2 text-xs transition-colors',
                   pace === option
-                    ? 'border-accent-500 bg-accent-50 text-accent-700'
-                    : 'border-ink-200 hover:bg-ink-50',
+                    ? 'border-brand bg-brand-soft text-brand-text'
+                    : 'border-line-strong hover:bg-sunken',
                 )}
               >
                 <input
@@ -137,7 +137,7 @@ export function PulsePrompt() {
         </fieldset>
 
         <fieldset>
-          <legend className="mb-2 text-sm text-ink-700">
+          <legend className="mb-2 text-sm text-body">
             I know what is expected of me
           </legend>
           <div className="grid max-w-xs grid-cols-5 gap-1">
@@ -147,8 +147,8 @@ export function PulsePrompt() {
                 className={cx(
                   'cursor-pointer rounded-md border py-2 text-center text-sm transition-colors',
                   clarity === value
-                    ? 'border-accent-500 bg-accent-50 text-accent-700'
-                    : 'border-ink-200 hover:bg-ink-50',
+                    ? 'border-brand bg-brand-soft text-brand-text'
+                    : 'border-line-strong hover:bg-sunken',
                 )}
               >
                 <input
@@ -162,13 +162,13 @@ export function PulsePrompt() {
               </label>
             ))}
           </div>
-          <p className="mt-1 text-[11px] text-ink-400">
+          <p className="mt-1 text-[11px] text-faint">
             1 = not at all, 5 = completely
           </p>
         </fieldset>
 
         <label className="flex flex-col gap-1.5">
-          <span className="text-sm text-ink-700">
+          <span className="text-sm text-body">
             One thing that would help you right now
           </span>
           <textarea
@@ -177,7 +177,7 @@ export function PulsePrompt() {
             value={suggestion}
             onChange={(event) => setSuggestion(event.target.value)}
             placeholder={t('pulse.optional')}
-            className="w-full rounded-md bg-white px-3 py-2 text-sm text-ink-800 ring-1 ring-ink-200 placeholder:text-ink-400"
+            className="w-full rounded-md bg-surface px-3 py-2 text-sm text-heading ring-1 ring-line-strong placeholder:text-faint"
           />
         </label>
 

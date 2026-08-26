@@ -155,7 +155,7 @@ export function CrudScreen<T extends { id: number }, TForm>({
                   onClick={() => setDeleting(row)}
                   disabled={lockReason !== null}
                   title={lockReason ?? undefined}
-                  className="text-critical-600"
+                  className="text-bad"
                 >
                   Delete
                 </Button>

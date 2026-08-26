@@ -148,7 +148,7 @@ export function AssignmentsPage() {
         }
       >
         {dirty ? (
-          <p className="mb-3 text-sm text-caution-600">
+          <p className="mb-3 text-sm text-warn">
             Unsaved changes: {addedCount} to add, {removedCount} to remove.
           </p>
         ) : null}
@@ -163,7 +163,7 @@ export function AssignmentsPage() {
               header: '',
               cell: (row) =>
                 serverKeys.has(keyOf(row)) ? null : (
-                  <span className="text-xs text-positive-600">new</span>
+                  <span className="text-xs text-good">new</span>
                 ),
             },
           ]}
@@ -174,7 +174,7 @@ export function AssignmentsPage() {
           actions={(row) => (
             <Button
               variant="ghost"
-              className="text-critical-600"
+              className="text-bad"
               onClick={() =>
                 setDraft((current) =>
                   (current ?? []).filter((entry) => keyOf(entry) !== keyOf(row)),
@@ -304,11 +304,11 @@ function Select({
 }) {
   return (
     <label className="flex flex-col gap-1.5">
-      <span className="text-sm font-medium text-ink-700">{label}</span>
+      <span className="text-sm font-medium text-body">{label}</span>
       <select
         value={value ?? ''}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="rounded-md bg-white px-3 py-2 text-sm text-ink-800 ring-1 ring-ink-200"
+        className="rounded-md bg-surface px-3 py-2 text-sm text-heading ring-1 ring-line-strong"
       >
         <option value="">Select {label.toLowerCase()}</option>
         {options.map((option) => (

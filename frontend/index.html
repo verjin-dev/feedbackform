@@ -4,6 +4,45 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Faculty Evaluation</title>
+    <meta
+      name="description"
+      content="Anonymous student feedback on teaching."
+    />
+
+    <!--
+      Paints the browser chrome to match the page. Without both, the address
+      bar on a phone stays white above a dark page.
+    -->
+    <meta name="theme-color" content="#f5f7f7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#131d1c" media="(prefers-color-scheme: dark)" />
+
+    <!--
+      Runs before anything renders. Without it the page paints light and then
+      corrects itself once the bundle runs, which is a white flash on every
+      load for everybody using dark mode. Inline and tiny on purpose: a
+      separate request would be too late to prevent exactly that.
+    -->
+    <script>
+      try {
+        var t = localStorage.getItem('evaluation.theme');
+        if (t === 'light' || t === 'dark') {
+          document.documentElement.setAttribute('data-theme', t);
+        }
+      } catch (e) {}
+    </script>
+
+    <!--
+      Latin and Tamil. Preconnect because these are on the critical path for
+      first paint, and `display=swap` so a slow font never leaves the form
+      invisible -- a student on college wifi should be able to start reading
+      before the webfont arrives.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Tamil:wght@400;500;600&display=swap"
+    />
   </head>
   <body>
     <div id="root"></div>

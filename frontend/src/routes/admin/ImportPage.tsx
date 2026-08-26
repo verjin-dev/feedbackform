@@ -112,7 +112,7 @@ export function ImportPage() {
 
       <Card title="Import accounts from a spreadsheet">
         <div className="flex flex-col gap-4">
-          <p className="max-w-prose text-sm text-ink-500">
+          <p className="max-w-prose text-sm text-muted">
             Upload a CSV to add students, faculty or administrators in bulk. The
             file is checked and previewed first — nothing is written until you
             confirm.
@@ -120,7 +120,7 @@ export function ImportPage() {
 
           <div className="flex flex-wrap items-end gap-3">
             <label className="flex flex-col gap-1.5">
-              <span className="text-sm font-medium text-ink-700">CSV file</span>
+              <span className="text-sm font-medium text-body">CSV file</span>
               <input
                 ref={inputRef}
                 type="file"
@@ -129,12 +129,12 @@ export function ImportPage() {
                   setFile(event.target.files?.[0] ?? null);
                   reset();
                 }}
-                className="text-sm text-ink-600 file:mr-3 file:rounded-md file:border-0 file:bg-ink-100 file:px-3 file:py-2 file:text-sm file:text-ink-700"
+                className="text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-sunken file:px-3 file:py-2 file:text-sm file:text-body"
               />
             </label>
 
             <label className="flex flex-col gap-1.5">
-              <span className="text-sm font-medium text-ink-700">
+              <span className="text-sm font-medium text-body">
                 If an account already exists
               </span>
               <select
@@ -143,7 +143,7 @@ export function ImportPage() {
                   setOnExisting(event.target.value as 'skip' | 'update');
                   reset();
                 }}
-                className="rounded-md bg-white px-3 py-2 text-sm text-ink-800 ring-1 ring-ink-200"
+                className="rounded-md bg-surface px-3 py-2 text-sm text-heading ring-1 ring-line-strong"
               >
                 <option value="skip">Leave it unchanged</option>
                 <option value="update">Update its name and class</option>
@@ -159,19 +159,19 @@ export function ImportPage() {
             </Button>
           </div>
 
-          <details className="text-sm text-ink-500">
+          <details className="text-sm text-muted">
             <summary className="cursor-pointer">What the file should contain</summary>
             <div className="mt-2 flex flex-col gap-2">
               <p>
                 A header row and one row per person. Students need{' '}
-                <code className="rounded bg-ink-100 px-1">curriculum</code>,{' '}
-                <code className="rounded bg-ink-100 px-1">level</code> and{' '}
-                <code className="rounded bg-ink-100 px-1">section</code> matching a
+                <code className="rounded bg-sunken px-1">curriculum</code>,{' '}
+                <code className="rounded bg-sunken px-1">level</code> and{' '}
+                <code className="rounded bg-sunken px-1">section</code> matching a
                 class that already exists. Leave{' '}
-                <code className="rounded bg-ink-100 px-1">password</code> out and one
+                <code className="rounded bg-sunken px-1">password</code> out and one
                 will be generated for each person.
               </p>
-              <pre className="overflow-x-auto rounded-md bg-ink-50 p-3 text-xs text-ink-700">
+              <pre className="overflow-x-auto rounded-md bg-sunken p-3 text-xs text-body">
                 {SAMPLE}
               </pre>
             </div>
@@ -261,7 +261,7 @@ export function ImportPage() {
                 cell: (row) => (
                   <div className="flex flex-col gap-1">
                     {row.generated_password ? (
-                      <code className="rounded bg-ink-100 px-1.5 py-0.5 text-xs">
+                      <code className="rounded bg-sunken px-1.5 py-0.5 text-xs">
                         {row.generated_password}
                       </code>
                     ) : null}
@@ -270,7 +270,7 @@ export function ImportPage() {
                         key={message}
                         className={cx(
                           'text-xs',
-                          row.action === 'error' ? 'text-critical-600' : 'text-ink-500',
+                          row.action === 'error' ? 'text-bad' : 'text-muted',
                         )}
                       >
                         {message}
@@ -298,11 +298,11 @@ function Summary({
 }) {
   return (
     <div>
-      <div className="text-xs uppercase text-ink-500">{label}</div>
+      <div className="text-xs uppercase text-muted">{label}</div>
       <div
         className={cx(
           'text-xl font-semibold tabular-nums',
-          critical && value > 0 ? 'text-critical-600' : 'text-ink-900',
+          critical && value > 0 ? 'text-bad' : 'text-heading',
         )}
       >
         {value}

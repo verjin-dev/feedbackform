@@ -36,7 +36,7 @@ export function ResultsPage() {
 
   if (report.isLoading) {
     return (
-      <p className="py-10 text-center text-sm text-ink-400" role="status">
+      <p className="py-10 text-center text-sm text-faint" role="status">
         Loading...
       </p>
     );
@@ -48,10 +48,10 @@ export function ResultsPage() {
       <div className="mx-auto w-full max-w-lg">
         <Card>
           <div className="py-6 text-center">
-            <h2 className="text-base font-semibold text-ink-800">
+            <h2 className="text-base font-semibold text-heading">
               {conflict ? 'Not available yet' : 'Could not load your results'}
             </h2>
-            <p className="mt-2 text-sm text-ink-500">
+            <p className="mt-2 text-sm text-muted">
               {conflict
                 ? 'No academic year is currently active.'
                 : report.error instanceof Error
@@ -73,12 +73,12 @@ export function ResultsPage() {
         title="My results"
         actions={
           pickableTerms.length > 1 ? (
-            <label className="flex items-center gap-2 text-sm text-ink-600">
+            <label className="flex items-center gap-2 text-sm text-muted">
               <span>Academic year</span>
               <select
                 value={termId ?? data.term.id}
                 onChange={(event) => setTermId(Number(event.target.value))}
-                className="rounded-md bg-white px-2 py-1.5 text-sm text-ink-800 ring-1 ring-ink-200"
+                className="rounded-md bg-surface px-2 py-1.5 text-sm text-heading ring-1 ring-line-strong"
               >
                 {pickableTerms.map((term) => (
                   <option key={term.id} value={term.id}>
@@ -88,27 +88,27 @@ export function ResultsPage() {
               </select>
             </label>
           ) : (
-            <span className="text-sm text-ink-500">
+            <span className="text-sm text-muted">
               {data.term.year} · semester {data.term.semester}
             </span>
           )
         }
       >
         {data.assignments.length === 0 ? (
-          <p className="py-6 text-center text-sm text-ink-400">
+          <p className="py-6 text-center text-sm text-faint">
             You have no subjects assigned for this year.
           </p>
         ) : (
           <>
             <dl className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
               <div>
-                <dt className="text-xs uppercase text-ink-500">Across all subjects</dt>
+                <dt className="text-xs uppercase text-muted">Across all subjects</dt>
                 <dd>
                   <Mean value={data.mean} />
                 </dd>
               </div>
               <div>
-                <dt className="text-xs uppercase text-ink-500">Subjects</dt>
+                <dt className="text-xs uppercase text-muted">Subjects</dt>
                 <dd className="tabular-nums">{data.assignments.length}</dd>
               </div>
             </dl>

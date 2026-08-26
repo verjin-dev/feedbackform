@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 
 import type { Role } from '@/api/types';
 import { landingFor } from '@/auth/landing';
+import { Spinner } from '@/components/ui';
 import { useAuth } from '@/auth/useAuth';
 
 /**
@@ -38,11 +39,12 @@ export function RequireRole({ allow }: { allow: readonly Role[] }) {
 export function FullPageSpinner({ label }: { label: string }) {
   return (
     <div
-      className="flex min-h-screen items-center justify-center"
+      className="flex min-h-screen flex-col items-center justify-center gap-3"
       role="status"
       aria-live="polite"
     >
-      <span className="text-sm text-ink-500">{label}...</span>
+      <Spinner className="size-5 text-brand" />
+      <span className="text-sm text-muted">{label}...</span>
     </div>
   );
 }

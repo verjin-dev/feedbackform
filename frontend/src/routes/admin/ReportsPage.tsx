@@ -31,14 +31,14 @@ export function ReportsPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <TermPicker terms={termList.data} value={termId} onChange={setTermId} />
-            <label className="flex items-center gap-2 text-sm text-ink-600">
+            <label className="flex items-center gap-2 text-sm text-muted">
               <span>Faculty</span>
               <select
                 value={facultyId ?? ''}
                 onChange={(event) =>
                   setFacultyId(event.target.value === '' ? null : Number(event.target.value))
                 }
-                className="rounded-md bg-white px-2 py-1.5 text-sm text-ink-800 ring-1 ring-ink-200"
+                className="rounded-md bg-surface px-2 py-1.5 text-sm text-heading ring-1 ring-line-strong"
               >
                 <option value="">Select a faculty member</option>
                 {facultyList.data?.map((entry) => (
@@ -52,11 +52,11 @@ export function ReportsPage() {
         }
       >
         {facultyId === null ? (
-          <p className="py-6 text-center text-sm text-ink-400">
+          <p className="py-6 text-center text-sm text-faint">
             Select a faculty member to see their results.
           </p>
         ) : report.isLoading ? (
-          <p className="py-6 text-center text-sm text-ink-400" role="status">
+          <p className="py-6 text-center text-sm text-faint" role="status">
             Loading...
           </p>
         ) : report.error ? (
@@ -66,17 +66,17 @@ export function ReportsPage() {
               : 'Could not load this report.'}
           </Alert>
         ) : report.data && report.data.assignments.length === 0 ? (
-          <p className="py-6 text-center text-sm text-ink-400">
+          <p className="py-6 text-center text-sm text-faint">
             {report.data.faculty_name} has no assignments this year.
           </p>
         ) : report.data ? (
           <dl className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
             <div>
-              <dt className="text-xs text-ink-500 uppercase">Faculty</dt>
+              <dt className="text-xs text-muted uppercase">Faculty</dt>
               <dd className="font-medium">{report.data.faculty_name}</dd>
             </div>
             <div>
-              <dt className="text-xs text-ink-500 uppercase">Overall across subjects</dt>
+              <dt className="text-xs text-muted uppercase">Overall across subjects</dt>
               <dd>
                 <Mean value={report.data.mean} />
               </dd>

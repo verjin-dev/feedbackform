@@ -51,17 +51,17 @@ export function Dialog({
         if (event.target === ref.current) onClose();
       }}
       aria-labelledby="dialog-title"
-      className="w-full max-w-md rounded-lg p-0 backdrop:bg-ink-900/40 open:flex open:flex-col"
+      className="w-full max-w-md rounded-xl bg-raised p-0 text-body shadow-e3 ring-1 ring-line backdrop:bg-overlay backdrop:backdrop-blur-sm open:flex open:flex-col"
     >
-      <header className="flex items-center justify-between border-b border-ink-100 px-5 py-3">
-        <h2 id="dialog-title" className="text-sm font-semibold text-ink-800">
+      <header className="flex items-center justify-between border-b border-line px-5 py-3">
+        <h2 id="dialog-title" className="text-sm font-semibold text-heading">
           {title}
         </h2>
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="rounded px-2 text-ink-400 hover:text-ink-700"
+          className="rounded px-2 text-faint hover:text-body"
         >
           &times;
         </button>
@@ -70,7 +70,7 @@ export function Dialog({
       <div className="px-5 py-4">{children}</div>
 
       {footer ? (
-        <footer className="flex justify-end gap-2 border-t border-ink-100 px-5 py-3">
+        <footer className="flex justify-end gap-2 border-t border-line px-5 py-3">
           {footer}
         </footer>
       ) : null}
@@ -117,7 +117,7 @@ export function ConfirmDialog({
         </>
       }
     >
-      <div className="text-sm text-ink-600">{message}</div>
+      <div className="text-sm text-muted">{message}</div>
     </Dialog>
   );
 }

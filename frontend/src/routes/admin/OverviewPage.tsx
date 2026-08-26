@@ -42,9 +42,9 @@ const STATUS_LABEL = {
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-lg bg-white px-4 py-3 ring-1 ring-ink-200">
-      <div className="text-xs tracking-wide text-ink-500 uppercase">{label}</div>
-      <div className="mt-0.5 text-2xl font-semibold tabular-nums text-ink-900">
+    <div className="rounded-lg bg-surface px-4 py-3 ring-1 ring-line-strong">
+      <div className="text-xs tracking-wide text-muted uppercase">{label}</div>
+      <div className="mt-0.5 text-2xl font-semibold tabular-nums text-heading">
         {value}
       </div>
     </div>
@@ -108,7 +108,7 @@ export function OverviewPage() {
           term ? (
             <div className="flex items-center gap-3">
               <Badge tone={STATUS_TONE[term.status]}>{STATUS_LABEL[term.status]}</Badge>
-              <span className="text-sm text-ink-500">
+              <span className="text-sm text-muted">
                 {term.year} · semester {term.semester}
               </span>
             </div>
@@ -140,7 +140,7 @@ export function OverviewPage() {
 
             {/* Surfacing the weakest first is the point: a mean across
                 everything hides the classes nobody answered. */}
-            <h3 className="mb-2 text-sm font-semibold text-ink-800">
+            <h3 className="mb-2 text-sm font-semibold text-heading">
               Lowest response rates
             </h3>
             <DataTable

@@ -168,7 +168,7 @@ export function SubjectsPage() {
         {
           header: 'Description',
           cell: (row) => (
-            <span className="text-ink-500">{row.description ?? '—'}</span>
+            <span className="text-muted">{row.description ?? '—'}</span>
           ),
         },
       ]}

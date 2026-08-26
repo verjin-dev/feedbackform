@@ -74,7 +74,7 @@ export function EvaluatePage() {
 
   if (questionnaire.isLoading || pending.isLoading) {
     return (
-      <p className="py-10 text-center text-sm text-ink-400" role="status">
+      <p className="py-10 text-center text-sm text-faint" role="status">
         Loading...
       </p>
     );
@@ -118,6 +118,10 @@ export function EvaluatePage() {
   }
 
   // --- The form -----------------------------------------------------------
+
+  const progressPercent = `${
+    allQuestions.length === 0 ? 0 : (answeredCount / allQuestions.length) * 100
+  }%`;
 
   async function handleSubmit() {
     if (selected === null) return;
@@ -164,7 +168,7 @@ export function EvaluatePage() {
       <PulsePrompt />
 
       <Card title={t('evaluate.heading')}>
-        <p className="mb-3 text-sm text-ink-500">
+        <p className="mb-3 text-sm text-muted">
           {t('evaluate.remaining', { count: assignments.length })}{' '}
           {t('evaluate.anonymous')}
         </p>
@@ -172,7 +176,7 @@ export function EvaluatePage() {
         {/* A horizontal scroller on phones, a wrapped list on wider screens.
             The legacy sidebar was a fixed 3-column grid that pushed the form
             off-screen below 768px. */}
-        <ul className="flex gap-2 overflow-x-auto pb-1 md:flex-wrap md:overflow-visible">
+        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {assignments.map((entry) => {
             const active = selected?.assignment_id === entry.assignment_id;
             return (
@@ -188,14 +192,20 @@ export function EvaluatePage() {
                     setError(null);
                   }}
                   className={cx(
-                    'rounded-md border px-3 py-2 text-left text-sm whitespace-nowrap transition-colors',
+                    'flex h-full w-full flex-col gap-0.5 rounded-xl px-3.5 py-3 text-left',
+                    'ring-1 transition-all duration-150',
                     active
-                      ? 'border-accent-500 bg-accent-50 text-accent-700'
-                      : 'border-ink-200 bg-white text-ink-600 hover:bg-ink-50',
+                      ? 'bg-brand-soft text-brand-text shadow-e1 ring-brand/40'
+                      : 'bg-surface text-body ring-line-strong hover:bg-sunken hover:ring-ink-300',
                   )}
                 >
-                  <span className="block font-medium">{entry.subject_code}</span>
-                  <span className="block text-xs text-ink-500">{entry.faculty_name}</span>
+                  <span className="text-sm font-semibold">{entry.subject_code}</span>
+                  <span className="truncate text-xs opacity-80">
+                    {entry.subject_name}
+                  </span>
+                  <span className="mt-0.5 truncate text-xs text-muted">
+                    {entry.faculty_name}
+                  </span>
                 </button>
               </li>
             );
@@ -207,9 +217,26 @@ export function EvaluatePage() {
         <Card
           title={`${selected.subject_name} · ${selected.faculty_name}`}
           actions={
-            <span className="text-sm tabular-nums text-ink-500">
-              {answeredCount} of {allQuestions.length} answered
-            </span>
+            <div className="flex items-center gap-2.5">
+              {/* Redundant with the count beside it, deliberately: on a phone
+                  this bar is the thing somebody actually reads to know how
+                  much is left. */}
+              <div
+                aria-hidden="true"
+                className="h-1.5 w-24 overflow-hidden rounded-full bg-sunken ring-1 ring-line"
+              >
+                <div
+                  className={cx(
+                    'h-full rounded-full transition-[width] duration-300',
+                    complete ? 'bg-good' : 'bg-brand',
+                  )}
+                  style={{ width: progressPercent }}
+                />
+              </div>
+              <span className="text-sm tabular-nums text-muted">
+                {answeredCount} of {allQuestions.length} answered
+              </span>
+            </div>
           }
         >
           {showMissing && !complete ? (
@@ -230,8 +257,9 @@ export function EvaluatePage() {
           >
             {questionnaire.data?.criteria.map((block) => (
               <section key={block.criterion_id}>
-                <h3 className="mb-2 border-b border-ink-100 pb-1 text-sm font-semibold text-ink-800">
+                <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-heading">
                   {block.name}
+                  <span aria-hidden="true" className="h-px flex-1 bg-line" />
                 </h3>
 
                 <div className="flex flex-col gap-4">
@@ -243,14 +271,14 @@ export function EvaluatePage() {
                       <fieldset
                         key={question.id}
                         className={cx(
-                          'rounded-md border p-3',
-                          missing ? 'border-critical-600 bg-critical-100/40' : 'border-ink-100',
+                          'rounded-xl bg-surface p-3.5 ring-1 transition-colors',
+                          missing ? 'bg-bad-soft/40 ring-bad/40' : 'ring-line-strong',
                         )}
                       >
-                        <legend className="px-1 text-sm text-ink-700">
-                          {question.text}
+                        <legend className="flex flex-wrap items-center gap-2 px-1 text-sm text-body">
+                          <span>{question.text}</span>
                           {missing ? (
-                            <span className="ml-2 text-xs text-critical-600">
+                            <span className="rounded-full bg-bad-soft px-2 py-0.5 text-xs font-medium text-bad ring-1 ring-bad/25">
                               Not answered
                             </span>
                           ) : null}
@@ -260,15 +288,20 @@ export function EvaluatePage() {
                             showed bare 1-5 columns under a legend printed once
                             at the top of the page, so on a phone the numbers
                             were unlabelled by the time you scrolled to them. */}
-                        <div className="mt-2 grid grid-cols-5 gap-1">
+                        <div className="mt-3 grid grid-cols-5 gap-1.5">
                           {SCALE.map((option) => (
                             <label
                               key={option}
                               className={cx(
-                                'flex cursor-pointer flex-col items-center gap-1 rounded-md border px-1 py-2 text-center transition-colors',
+                                'flex min-h-16 cursor-pointer flex-col items-center justify-center gap-1',
+                                'rounded-lg px-1 py-2 text-center ring-1',
+                                'transition-all duration-150 active:scale-[0.97]',
+                                // The ring thickens as well as changing
+                                // colour, so the chosen option is never
+                                // distinguished by hue alone.
                                 value === option
-                                  ? 'border-accent-500 bg-accent-50'
-                                  : 'border-ink-200 hover:bg-ink-50',
+                                  ? 'bg-brand-soft ring-2 ring-brand'
+                                  : 'bg-surface ring-line-strong hover:bg-sunken hover:ring-ink-300',
                               )}
                             >
                               <input
@@ -293,13 +326,18 @@ export function EvaluatePage() {
                                   rather than the word alone. */}
                               <span
                                 className={cx(
-                                  'text-sm font-semibold tabular-nums',
-                                  value === option ? 'text-accent-700' : 'text-ink-500',
+                                  'text-base leading-none font-semibold tabular-nums',
+                                  value === option ? 'text-brand-text' : 'text-muted',
                                 )}
                               >
                                 {option}
                               </span>
-                              <span className="text-[11px] leading-tight text-ink-500">
+                              <span
+                                className={cx(
+                                  'text-[11px] leading-tight',
+                                  value === option ? 'text-brand-text' : 'text-muted',
+                                )}
+                              >
                                 {t(`rating.${option}` as const)}
                               </span>
                             </label>
@@ -316,14 +354,14 @@ export function EvaluatePage() {
                 thing a student can give and the most effort to give, so it
                 comes after the part that is quick. */}
             {questionnaire.data?.comment_prompts?.length ? (
-              <section className="rounded-md border border-ink-100 p-4">
-                <h3 className="text-sm font-semibold text-ink-800">
+              <section className="rounded-md border border-line p-4">
+                <h3 className="text-sm font-semibold text-heading">
                   Anything you want to say in your own words?
                 </h3>
 
                 {/* The fourth safeguard, and the only one that is not code:
                     the rules are stated before anyone types, not after. */}
-                <p className="mt-1 mb-3 text-xs leading-relaxed text-ink-500">
+                <p className="mt-1 mb-3 text-xs leading-relaxed text-muted">
                   Optional. Your instructor sees these only after the feedback
                   period closes and marks are in, and only if enough of your
                   class responded. They are shown without your name — but
@@ -336,7 +374,7 @@ export function EvaluatePage() {
                     const value = comments[entry.prompt] ?? '';
                     return (
                       <label key={entry.prompt} className="flex flex-col gap-1.5">
-                        <span className="text-sm text-ink-700">{entry.text}</span>
+                        <span className="text-sm text-body">{entry.text}</span>
                         <textarea
                           rows={3}
                           maxLength={1500}
@@ -347,11 +385,11 @@ export function EvaluatePage() {
                               [entry.prompt]: event.target.value,
                             }))
                           }
-                          className="w-full rounded-md bg-white px-3 py-2 text-sm text-ink-800 ring-1 ring-ink-200 placeholder:text-ink-400"
+                          className="w-full rounded-md bg-surface px-3 py-2 text-sm text-heading ring-1 ring-line-strong placeholder:text-faint"
                           placeholder={t('evaluate.optional')}
                         />
                         {value.length > 1200 ? (
-                          <span className="text-xs text-ink-400 tabular-nums">
+                          <span className="text-xs text-faint tabular-nums">
                             {1500 - value.length} characters left
                           </span>
                         ) : null}
@@ -364,8 +402,8 @@ export function EvaluatePage() {
 
             {/* Full width and a comfortable target on phones, which is how
                 most students will do this. */}
-            <div className="flex flex-col gap-3 border-t border-ink-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <span className="text-sm text-ink-500">
+            <div className="flex flex-col gap-3 border-t border-line pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <span className="text-sm text-muted">
                 {complete
                   ? t('evaluate.ready')
                   : t('evaluate.remaining', {
@@ -403,12 +441,12 @@ function Notice({
           <h2
             className={cx(
               'text-base font-semibold',
-              tone === 'positive' ? 'text-positive-600' : 'text-ink-800',
+              tone === 'positive' ? 'text-good' : 'text-heading',
             )}
           >
             {title}
           </h2>
-          <p className="mt-2 text-sm text-ink-500">{children}</p>
+          <p className="mt-2 text-sm text-muted">{children}</p>
         </div>
       </Card>
     </div>

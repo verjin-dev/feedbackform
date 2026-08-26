@@ -1,19 +1,42 @@
 @import 'tailwindcss';
 
-/* Design tokens.
+/* ==========================================================================
+ * Design tokens
  *
  * AdminLTE brought roughly 1,400 vendor files to style fourteen screens. This
- * replaces it with a small token set: one accent, a neutral ramp biased
- * slightly toward it, and separate semantic colours that are never used as the
- * accent. Everything below is referenced through Tailwind utilities, so a
- * palette change happens here and nowhere else.
- */
+ * replaces it with one palette and one set of semantic roles.
+ *
+ * Two layers, and the split is what makes dark mode work:
+ *
+ *   1. A fixed palette (`--color-ink-*`, `--color-accent-*`). Absolute values
+ *      that never change. Rarely used directly.
+ *   2. Semantic roles (`--color-surface`, `--color-border`, `--color-text-*`)
+ *      declared with `@theme inline`, so the utility emits `var(--surface)`
+ *      rather than a baked-in hex. Components spell the *role*, the role is
+ *      re-pointed per theme below, and no component knows a theme exists.
+ *
+ * A component that reaches past a role to `bg-white` or `text-ink-800` is the
+ * one that will be unreadable in dark mode. There are none left; keep it that
+ * way.
+ * ========================================================================== */
+
 @theme {
-  --font-sans: 'Inter var', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+  --font-sans:
+    'Inter var', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
     sans-serif;
 
+  /* Tamil needs a face that actually has the glyphs. Without this the browser
+   * falls back per-character and the script renders at a different optical
+   * size from the Latin around it. */
+  --font-tamil:
+    'Noto Sans Tamil', 'Latha', 'Nirmala UI', var(--font-sans);
+
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+
   /* Neutrals, cooled very slightly toward the accent so greys read as chosen
-   * rather than inherited. */
+   * rather than inherited. Extended at both ends for dark mode, which needs
+   * steps above 900 that are not simply black. */
+  --color-ink-25: #fbfcfc;
   --color-ink-50: #f5f7f7;
   --color-ink-100: #e9eeee;
   --color-ink-200: #d3dbdb;
@@ -23,29 +46,223 @@
   --color-ink-600: #475655;
   --color-ink-700: #3a4645;
   --color-ink-800: #202b2a;
+  --color-ink-850: #18211f;
   --color-ink-900: #131d1c;
+  --color-ink-950: #0c1413;
 
-  /* Single accent. Everything interactive derives from it. */
+  /* Single accent. Everything interactive derives from it. The 400 and 200
+   * steps exist for dark mode, where the 500 is too dark to sit on a dark
+   * surface and still clear 4.5:1. */
   --color-accent-50: #e8f4f3;
   --color-accent-100: #c8e6e3;
+  --color-accent-200: #9fd6d1;
   --color-accent-300: #6bbdb7;
+  --color-accent-400: #3d9c96;
   --color-accent-500: #0d6a66;
   --color-accent-600: #0a5451;
   --color-accent-700: #08423f;
+  --color-accent-800: #063230;
 
-  /* Semantic, deliberately not the accent hue: state must be distinguishable
-   * from emphasis. */
+  /* Semantic state, deliberately not the accent hue: state must be
+   * distinguishable from emphasis, including by someone who cannot separate
+   * the two by colour at all. */
   --color-positive-100: #dcefe5;
+  --color-positive-300: #7cc0a0;
+  --color-positive-500: #3d8f6a;
   --color-positive-600: #2c7455;
+  --color-positive-900: #14261e;
+
   --color-caution-100: #f7ecd6;
+  --color-caution-300: #dfbc70;
+  --color-caution-500: #a8791a;
   --color-caution-600: #8a6310;
+  --color-caution-900: #2a2110;
+
   --color-critical-100: #f8e3df;
+  --color-critical-300: #e9a496;
+  --color-critical-500: #c04a34;
   --color-critical-600: #a03726;
+  --color-critical-900: #2c1512;
+
+  /* Radius. Rounded enough to read as current, square enough that a table of
+   * numbers still reads as a table of numbers. */
+  --radius-xs: 0.25rem;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+
+  /* Motion. One duration for state, one for anything that moves in space. */
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Semantic roles. `inline` so the generated utility is `var(--surface)` and
+ * follows the runtime value rather than freezing today's one. */
+@theme inline {
+  --color-surface: var(--surface);
+  --color-raised: var(--raised);
+  --color-sunken: var(--sunken);
+  --color-overlay: var(--overlay);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-body: var(--text-body);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+  --color-heading: var(--text-heading);
+
+  --color-brand: var(--brand);
+  --color-on-brand: var(--on-brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-text: var(--brand-text);
+
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+
+  --shadow-e1: var(--elevation-1);
+  --shadow-e2: var(--elevation-2);
+  --shadow-e3: var(--elevation-3);
+}
+
+/* --- Light ---------------------------------------------------------------
+ *
+ * The page is the sunken layer and cards sit above it. Doing it the other way
+ * round -- white page, grey cards -- makes every card look disabled.
+ */
 :root {
   color-scheme: light;
+
+  --surface: #ffffff;
+  --raised: #ffffff;
+  --sunken: var(--color-ink-50);
+  --overlay: rgb(19 29 28 / 0.45);
+
+  --line: var(--color-ink-100);
+  --line-strong: var(--color-ink-200);
+
+  --text-heading: var(--color-ink-900);
+  --text-body: var(--color-ink-800);
+  --text-muted: var(--color-ink-500);
+  /* Not `ink-400`: at 3.4:1 on white it failed AA, and `faint` is not purely
+   * decorative here -- sidebar group headings, table captions and timestamps
+   * all use it. Checked against `--sunken` as well as `--surface`, since it
+   * appears on both. */
+  --text-faint: #5f706f;
+
+  --brand: var(--color-accent-500);
+  --brand-hover: var(--color-accent-600);
+  --brand-soft: var(--color-accent-50);
+  --brand-text: var(--color-accent-700);
+
+  /* What goes *on* a brand fill. A token rather than a hardcoded white,
+   * because the answer flips: dark mode raises the brand to a light tint so it
+   * reads as a colour against a dark page, and white on that is 3.3:1 -- a
+   * fail, and on the primary button of every screen. */
+  --on-brand: #ffffff;
+
+  --good: var(--color-positive-600);
+  --good-soft: var(--color-positive-100);
+  --warn: var(--color-caution-600);
+  --warn-soft: var(--color-caution-100);
+  --bad: var(--color-critical-600);
+  --bad-soft: var(--color-critical-100);
+
+  /* Shadows carry a hint of the neutral hue rather than pure black, which on
+   * a coloured surface reads as grime. */
+  --elevation-1: 0 1px 2px rgb(19 29 28 / 0.05), 0 1px 3px rgb(19 29 28 / 0.04);
+  --elevation-2: 0 2px 4px rgb(19 29 28 / 0.05), 0 6px 16px rgb(19 29 28 / 0.07);
+  --elevation-3: 0 8px 24px rgb(19 29 28 / 0.1), 0 24px 48px rgb(19 29 28 / 0.12);
 }
+
+/* --- Dark ----------------------------------------------------------------
+ *
+ * Two selectors, and both are needed. The media query serves everyone who has
+ * never touched the toggle, guarded so an explicit choice of light still wins;
+ * the attribute serves everyone who has.
+ *
+ * Surfaces lighten as they rise. Shadow alone does not read as elevation on a
+ * dark ground -- the eye takes lightness as the depth cue there.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    --surface: var(--color-ink-900);
+    --raised: var(--color-ink-850);
+    --sunken: var(--color-ink-950);
+    --overlay: rgb(6 10 10 / 0.7);
+
+    --line: #24302e;
+    --line-strong: #33403e;
+
+    --text-heading: #f2f6f5;
+    --text-body: #dde5e4;
+    --text-muted: #93a3a2;
+    --text-faint: #7a8b8a;
+
+    --brand: var(--color-accent-400);
+    --brand-hover: var(--color-accent-300);
+    --brand-soft: #0f2b2a;
+    --brand-text: var(--color-accent-200);
+    --on-brand: var(--color-ink-950);
+
+    --good: var(--color-positive-300);
+    --good-soft: var(--color-positive-900);
+    --warn: var(--color-caution-300);
+    --warn-soft: var(--color-caution-900);
+    --bad: var(--color-critical-300);
+    --bad-soft: var(--color-critical-900);
+
+    --elevation-1: 0 1px 2px rgb(0 0 0 / 0.4);
+    --elevation-2: 0 2px 6px rgb(0 0 0 / 0.45), 0 8px 20px rgb(0 0 0 / 0.35);
+    --elevation-3: 0 12px 32px rgb(0 0 0 / 0.55);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --surface: var(--color-ink-900);
+  --raised: var(--color-ink-850);
+  --sunken: var(--color-ink-950);
+  --overlay: rgb(6 10 10 / 0.7);
+
+  --line: #24302e;
+  --line-strong: #33403e;
+
+  --text-heading: #f2f6f5;
+  --text-body: #dde5e4;
+  --text-muted: #93a3a2;
+  --text-faint: #7a8b8a;
+
+  --brand: var(--color-accent-400);
+  --brand-hover: var(--color-accent-300);
+  --brand-soft: #0f2b2a;
+  --brand-text: var(--color-accent-200);
+  --on-brand: var(--color-ink-950);
+
+  --good: var(--color-positive-300);
+  --good-soft: var(--color-positive-900);
+  --warn: var(--color-caution-300);
+  --warn-soft: var(--color-caution-900);
+  --bad: var(--color-critical-300);
+  --bad-soft: var(--color-critical-900);
+
+  --elevation-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --elevation-2: 0 2px 6px rgb(0 0 0 / 0.45), 0 8px 20px rgb(0 0 0 / 0.35);
+  --elevation-3: 0 12px 32px rgb(0 0 0 / 0.55);
+}
+
+/* ==========================================================================
+ * Base
+ * ========================================================================== */
 
 html,
 body,
@@ -53,20 +270,122 @@ body,
   height: 100%;
 }
 
-body {
-  margin: 0;
-  background-color: var(--color-ink-50);
-  color: var(--color-ink-800);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
+@layer base {
+  body {
+    margin: 0;
+    background-color: var(--sunken);
+    color: var(--text-body);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Stops the whole page shifting sideways when a dialog opens. */
+    scrollbar-gutter: stable;
+  }
+}
+
+/* Tamil at the same nominal size reads noticeably smaller than Latin, and its
+ * ascenders and descenders need the extra leading. Applied by `lang`, so it
+ * follows the content rather than a global setting. */
+:lang(ta) {
+  font-family: var(--font-tamil);
+  font-size: 1.02em;
+  line-height: 1.75;
+}
+
+@layer base {
+  h1,
+  h2,
+  h3 {
+    color: var(--text-heading);
+    letter-spacing: -0.011em;
+    text-wrap: balance;
+  }
+
+  /* Anywhere a figure is compared down a column, the digits must not
+   * jitter. */
+  th,
+  td {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 /* Every interactive element gets a visible focus ring. AdminLTE suppressed
  * outlines in several places, which made the app unusable by keyboard. */
 :focus-visible {
-  outline: 2px solid var(--color-accent-500);
+  outline: 2px solid var(--brand);
   outline-offset: 2px;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
+}
+
+/* Form controls the browser paints itself. Without this they stay light in
+ * dark mode and the theme looks half-applied.
+ *
+ * Inside `@layer base`, and that is not cosmetic. Tailwind emits its
+ * utilities into `@layer utilities`, and an *unlayered* rule beats any
+ * layered one no matter how specific the layered one is -- so this same rule
+ * written at the top level silently overrode `text-white` on every button in
+ * the application, specificity notwithstanding. Anything here that could
+ * collide with a utility belongs in a layer. */
+@layer base {
+  input,
+  select,
+  textarea,
+  button {
+    font: inherit;
+    color: inherit;
+  }
+
+  ::placeholder {
+    color: var(--text-faint);
+    opacity: 1;
+  }
+}
+
+::selection {
+  background: var(--brand-soft);
+  color: var(--brand-text);
+}
+
+/* A skip link that is invisible until it has focus. The admin sidebar is
+ * seventeen links deep, which is seventeen tab stops before the content. */
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: -3rem;
+  z-index: 100;
+  border-radius: var(--radius-md);
+  background: var(--brand);
+  color: var(--on-brand);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  transition: top 160ms var(--ease-out-soft);
+}
+
+.skip-link:focus {
+  top: 0.75rem;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-rise {
+  animation: rise 260ms var(--ease-out-soft) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -76,20 +395,41 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-/* Print.
+/* ==========================================================================
+ * Print
  *
  * An accreditation file is paper. What prints should be the report, not a
  * screenshot of a web page with a navigation sidebar down the side of it.
- */
+ * ========================================================================== */
+
 @media print {
   /* The app shell is chrome; on paper it is noise. */
   header,
   nav,
-  button {
+  button,
+  .no-print {
     display: none !important;
+  }
+
+  /* Print in light regardless of what the reader is using on screen: the dark
+   * theme on paper is a solid block of toner and unreadable at the margins. */
+  :root {
+    --surface: #fff;
+    --raised: #fff;
+    --sunken: #fff;
+    --line: #ccc;
+    --line-strong: #999;
+    --text-heading: #000;
+    --text-body: #000;
+    --text-muted: #333;
+    --text-faint: #555;
+    --elevation-1: none;
+    --elevation-2: none;
+    --elevation-3: none;
   }
 
   body {

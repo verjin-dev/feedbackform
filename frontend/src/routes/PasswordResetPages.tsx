@@ -13,10 +13,10 @@ function Shell({ title, children }: { title: string; children: React.ReactNode }
   return (
     <div className="flex min-h-screen items-center justify-center p-5">
       <div className="w-full max-w-sm">
-        <h1 className="mb-1 text-xl font-semibold text-ink-900">{title}</h1>
+        <h1 className="mb-1 text-xl font-semibold text-heading">{title}</h1>
         <div className="mt-5">{children}</div>
         <p className="mt-4 text-center text-sm">
-          <Link to="/login" className="text-accent-600 hover:underline">
+          <Link to="/login" className="text-brand-text hover:underline">
             Back to sign in
           </Link>
         </p>
@@ -50,12 +50,12 @@ export function ForgotPasswordPage() {
     return (
       <Shell title="Check your email">
         <Card>
-          <p className="text-sm text-ink-600">
+          <p className="text-sm text-muted">
             If <strong>{email}</strong> has an account, a link to choose a new
             password is on its way. It works for one hour and can only be used
             once.
           </p>
-          <p className="mt-3 text-sm text-ink-500">
+          <p className="mt-3 text-sm text-muted">
             Nothing arrived? Check the spam folder, then ask your administrator
             to confirm which address your account uses.
           </p>
@@ -68,11 +68,11 @@ export function ForgotPasswordPage() {
     <Shell title="Forgotten password">
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-4 rounded-lg bg-white p-6 ring-1 ring-ink-200"
+        className="flex flex-col gap-4 rounded-lg bg-surface p-6 ring-1 ring-line-strong"
         noValidate
       >
         {error ? <Alert>{error}</Alert> : null}
-        <p className="text-sm text-ink-500">
+        <p className="text-sm text-muted">
           Enter your college email address and we will send you a link to choose
           a new password.
         </p>
@@ -155,7 +155,7 @@ export function SetPasswordPage({ mode }: { mode: 'reset' | 'invite' }) {
     return (
       <Shell title="Password set">
         <Card>
-          <p className="text-sm text-ink-600">
+          <p className="text-sm text-muted">
             Your password has been {mode === 'invite' ? 'set' : 'changed'}. Sign
             in with it to continue.
           </p>
@@ -173,7 +173,7 @@ export function SetPasswordPage({ mode }: { mode: 'reset' | 'invite' }) {
     return (
       <Shell title="This link no longer works">
         <Card>
-          <p className="text-sm text-ink-600">
+          <p className="text-sm text-muted">
             It may have expired, or it may already have been used — each link
             works once.
           </p>
@@ -194,7 +194,7 @@ export function SetPasswordPage({ mode }: { mode: 'reset' | 'invite' }) {
   if (check.isLoading) {
     return (
       <Shell title={title}>
-        <p className="text-center text-sm text-ink-400" role="status">
+        <p className="text-center text-sm text-faint" role="status">
           Checking your link...
         </p>
       </Shell>
@@ -205,12 +205,12 @@ export function SetPasswordPage({ mode }: { mode: 'reset' | 'invite' }) {
     <Shell title={title}>
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-4 rounded-lg bg-white p-6 ring-1 ring-ink-200"
+        className="flex flex-col gap-4 rounded-lg bg-surface p-6 ring-1 ring-line-strong"
         noValidate
       >
         {error ? <Alert>{error}</Alert> : null}
         {check.data?.first_name ? (
-          <p className="text-sm text-ink-500">
+          <p className="text-sm text-muted">
             Hello {check.data.first_name} — this is for{' '}
             <strong>{check.data.email}</strong>.
           </p>

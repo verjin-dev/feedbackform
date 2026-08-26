@@ -97,12 +97,12 @@ export function ExportsPage() {
                 value={termId}
                 onChange={() => undefined}
               />
-              <label className="flex items-center gap-2 text-sm text-ink-600">
+              <label className="flex items-center gap-2 text-sm text-muted">
                 <span>Curriculum</span>
                 <select
                   value={curriculum}
                   onChange={(event) => setCurriculum(event.target.value)}
-                  className="rounded-md bg-white px-2 py-1.5 text-sm text-ink-800 ring-1 ring-ink-200"
+                  className="rounded-md bg-surface px-2 py-1.5 text-sm text-heading ring-1 ring-line-strong"
                 >
                   <option value="">All</option>
                   {curricula.data?.map((entry) => (
@@ -118,7 +118,7 @@ export function ExportsPage() {
             </div>
           }
         >
-          <p className="mb-4 max-w-prose text-sm text-ink-500">
+          <p className="mb-4 max-w-prose text-sm text-muted">
             Files for an NBA or NAAC return. The CSVs carry the raw counts, so an
             assessor can recompute any figure rather than taking it on trust. The
             cover page prints from your browser.
@@ -129,12 +129,12 @@ export function ExportsPage() {
               <a
                 key={file.label}
                 href={file.href}
-                className="flex flex-col gap-1 rounded-lg border border-ink-200 p-4 transition-colors hover:border-accent-500 hover:bg-accent-50"
+                className="flex flex-col gap-1 rounded-lg border border-line-strong p-4 transition-colors hover:border-brand hover:bg-brand-soft"
               >
-                <span className="text-sm font-medium text-ink-800">
-                  {file.label} <span className="text-ink-400">.csv</span>
+                <span className="text-sm font-medium text-heading">
+                  {file.label} <span className="text-faint">.csv</span>
                 </span>
-                <span className="text-xs text-ink-500">{file.note}</span>
+                <span className="text-xs text-muted">{file.note}</span>
               </a>
             ))}
           </div>
@@ -156,20 +156,20 @@ export function ExportsPage() {
       </div>
 
       {data ? (
-        <article className="rounded-lg bg-white p-8 ring-1 ring-ink-200 print:p-0 print:ring-0">
-          <header className="border-b-2 border-ink-800 pb-3">
-            <h1 className="text-2xl font-semibold text-ink-900">{data.institution}</h1>
-            <p className="mt-1 text-ink-600">
+        <article className="rounded-lg bg-surface p-8 ring-1 ring-line-strong print:p-0 print:ring-0">
+          <header className="border-b-2 border-line-strong pb-3">
+            <h1 className="text-2xl font-semibold text-heading">{data.institution}</h1>
+            <p className="mt-1 text-muted">
               Student feedback on teaching — {data.term.label}
               {data.curriculum ? ` · ${data.curriculum}` : ''}
             </p>
-            <p className="mt-1 text-xs text-ink-500">
+            <p className="mt-1 text-xs text-muted">
               Generated {new Date(data.generated_at).toLocaleString()}
             </p>
           </header>
 
           <section className="mt-5">
-            <h2 className="mb-2 text-sm font-semibold tracking-wide text-ink-800 uppercase">
+            <h2 className="mb-2 text-sm font-semibold tracking-wide text-heading uppercase">
               Coverage
             </h2>
             <dl className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm md:grid-cols-4">
@@ -180,7 +180,7 @@ export function ExportsPage() {
               <Figure label="Students eligible" value={data.students_eligible} />
               <Figure label="Responses" value={data.responses} />
               <div>
-                <dt className="text-xs uppercase text-ink-500">Response rate</dt>
+                <dt className="text-xs uppercase text-muted">Response rate</dt>
                 <dd className="mt-0.5">
                   <Rate value={data.response_rate} />
                 </dd>
@@ -189,12 +189,12 @@ export function ExportsPage() {
           </section>
 
           <section className="mt-6">
-            <h2 className="mb-2 text-sm font-semibold tracking-wide text-ink-800 uppercase">
+            <h2 className="mb-2 text-sm font-semibold tracking-wide text-heading uppercase">
               Results by subject
             </h2>
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-ink-300 text-left text-xs uppercase text-ink-500">
+                <tr className="border-b border-line-strong text-left text-xs uppercase text-muted">
                   <th className="py-1 font-medium">Faculty</th>
                   <th className="py-1 font-medium">Subject</th>
                   <th className="py-1 font-medium">Class</th>
@@ -207,7 +207,7 @@ export function ExportsPage() {
                 {data.assignment_reports.map((row) => (
                   <tr
                     key={row.assignment_id}
-                    className="border-b border-ink-100 break-inside-avoid"
+                    className="border-b border-line break-inside-avoid"
                   >
                     <td className="py-1.5">{row.faculty_name}</td>
                     <td className="py-1.5">{row.subject_code}</td>
@@ -227,8 +227,8 @@ export function ExportsPage() {
             </table>
           </section>
 
-          <section className="mt-6 text-xs text-ink-500">
-            <h2 className="mb-1 text-sm font-semibold tracking-wide text-ink-800 uppercase">
+          <section className="mt-6 text-xs text-muted">
+            <h2 className="mb-1 text-sm font-semibold tracking-wide text-heading uppercase">
               Method
             </h2>
             <p className="max-w-prose">
@@ -255,8 +255,8 @@ export function ExportsPage() {
 function Figure({ label, value }: { label: string; value: number }) {
   return (
     <div>
-      <dt className="text-xs uppercase text-ink-500">{label}</dt>
-      <dd className="text-lg font-semibold tabular-nums text-ink-900">{value}</dd>
+      <dt className="text-xs uppercase text-muted">{label}</dt>
+      <dd className="text-lg font-semibold tabular-nums text-heading">{value}</dd>
     </div>
   );
 }

@@ -47,13 +47,13 @@ function toneFor(value: number | null) {
 function ProgressBar({ row }: { row: ClassProgress }) {
   const total = Math.max(row.students, 1);
   const parts = [
-    { key: 'done', width: (row.completed / total) * 100, className: 'bg-accent-500' },
-    { key: 'part', width: (row.partial / total) * 100, className: 'bg-accent-300' },
+    { key: 'done', width: (row.completed / total) * 100, className: 'bg-brand' },
+    { key: 'part', width: (row.partial / total) * 100, className: 'bg-accent-400' },
   ];
 
   return (
     <div
-      className="flex h-2.5 w-full min-w-32 overflow-hidden rounded-full bg-ink-100"
+      className="flex h-2.5 w-full min-w-32 overflow-hidden rounded-full bg-sunken"
       role="img"
       aria-label={`${row.completed} finished, ${row.partial} partway, ${row.not_started} not started, of ${row.students}`}
     >
@@ -134,7 +134,7 @@ export function ParticipationPage() {
           </div>
         }
       >
-        <p className="mb-4 max-w-prose text-sm text-ink-500">
+        <p className="mb-4 max-w-prose text-sm text-muted">
           Response rate decides whether the results mean anything. A report built
           on a fifth of the class is a well-presented guess, so this is the
           number worth moving.
@@ -143,17 +143,17 @@ export function ParticipationPage() {
         {overall && overall.students > 0 ? (
           <div className="mb-4 flex flex-wrap gap-x-8 gap-y-2">
             <div>
-              <div className="text-xs uppercase text-ink-500">Finished everything</div>
-              <div className="text-2xl font-semibold tabular-nums text-ink-900">
+              <div className="text-xs uppercase text-muted">Finished everything</div>
+              <div className="text-2xl font-semibold tabular-nums text-heading">
                 {overall.completed}
-                <span className="text-base font-normal text-ink-400">
+                <span className="text-base font-normal text-faint">
                   {' '}
                   of {overall.students}
                 </span>
               </div>
             </div>
             <div>
-              <div className="text-xs uppercase text-ink-500">Overall</div>
+              <div className="text-xs uppercase text-muted">Overall</div>
               <div className="mt-1">
                 <Badge tone={toneFor(overall.completed / overall.students)}>
                   {pct(overall.completed / overall.students)}
@@ -164,7 +164,7 @@ export function ParticipationPage() {
         ) : null}
 
         {showQr ? (
-          <div className="mb-4 flex flex-col items-center gap-2 rounded-lg border border-ink-200 p-5">
+          <div className="mb-4 flex flex-col items-center gap-2 rounded-lg border border-line-strong p-5">
             {/* Put this on a slide. Scanning from a seat is a much lower bar
                 than remembering a URL later, and that gap is most of the
                 response rate. */}
@@ -173,7 +173,7 @@ export function ParticipationPage() {
               alt="Scan to open the feedback form"
               className="h-48 w-48"
             />
-            <p className="text-sm text-ink-500">Scan to open the feedback form</p>
+            <p className="text-sm text-muted">Scan to open the feedback form</p>
             <Button variant="ghost" onClick={() => window.print()}>
               Print this
             </Button>
@@ -272,7 +272,7 @@ export function ParticipationPage() {
 
           {report.recipients > 0 ? (
             <>
-              <p className="mb-3 text-sm text-ink-500">
+              <p className="mb-3 text-sm text-muted">
                 {sent
                   ? `${report.recipients} email${report.recipients === 1 ? '' : 's'} sent, each listing only the subjects that person still owes.`
                   : `Each person is emailed once, listing only the subjects they still owe.`}
@@ -292,7 +292,7 @@ export function ParticipationPage() {
                     cell: (row) => (
                       <div className="flex flex-col gap-0.5">
                         {row.subjects.map((subject) => (
-                          <span key={subject} className="text-xs text-ink-500">
+                          <span key={subject} className="text-xs text-muted">
                             {subject}
                           </span>
                         ))}
@@ -302,7 +302,7 @@ export function ParticipationPage() {
                   {
                     header: 'Last reminded',
                     cell: (row) => (
-                      <span className={cx('text-xs', row.last_reminded ? 'text-ink-500' : 'text-ink-400')}>
+                      <span className={cx('text-xs', row.last_reminded ? 'text-muted' : 'text-faint')}>
                         {row.last_reminded
                           ? new Date(row.last_reminded).toLocaleDateString()
                           : 'never'}

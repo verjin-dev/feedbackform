@@ -83,12 +83,12 @@ export function ModerationPage() {
         title="Written feedback"
         actions={
           <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-sm text-ink-600">
+            <label className="flex items-center gap-2 text-sm text-muted">
               <span>Show</span>
               <select
                 value={filter}
                 onChange={(event) => setFilter(event.target.value as 'all' | 'withheld')}
-                className="rounded-md bg-white px-2 py-1.5 text-sm text-ink-800 ring-1 ring-ink-200"
+                className="rounded-md bg-surface px-2 py-1.5 text-sm text-heading ring-1 ring-line-strong"
               >
                 <option value="all">Everything</option>
                 <option value="withheld">Withheld only</option>
@@ -97,7 +97,7 @@ export function ModerationPage() {
           </div>
         }
       >
-        <p className="mb-4 max-w-prose text-sm text-ink-500">
+        <p className="mb-4 max-w-prose text-sm text-muted">
           Everything students wrote this year. You can read these before the
           instructor can, so that anything abusive can be taken down first.
           Withholding needs a reason, is recorded against your account, and can
@@ -105,18 +105,18 @@ export function ModerationPage() {
         </p>
 
         {rows.length > 0 ? (
-          <p className="mb-3 text-sm text-ink-500">
+          <p className="mb-3 text-sm text-muted">
             {rows.length} comment{rows.length === 1 ? '' : 's'}
             {withheldCount > 0 ? ` · ${withheldCount} withheld` : ''}
           </p>
         ) : null}
 
         {comments.isLoading ? (
-          <p className="py-6 text-center text-sm text-ink-400" role="status">
+          <p className="py-6 text-center text-sm text-faint" role="status">
             Loading...
           </p>
         ) : rows.length === 0 ? (
-          <p className="py-6 text-center text-sm text-ink-400">
+          <p className="py-6 text-center text-sm text-faint">
             {filter === 'withheld'
               ? 'Nothing has been withheld.'
               : 'No written feedback yet.'}
@@ -129,12 +129,12 @@ export function ModerationPage() {
                 className={cx(
                   'rounded-lg border p-4',
                   row.withheld
-                    ? 'border-critical-600 bg-critical-100/30'
-                    : 'border-ink-200',
+                    ? 'border-bad bg-bad-soft/30'
+                    : 'border-line-strong',
                 )}
               >
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-ink-500">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted">
                     <Badge>{PROMPT_LABEL[row.prompt] ?? row.prompt}</Badge>
                     <span>{row.subject_code}</span>
                     <span>·</span>
@@ -156,7 +156,7 @@ export function ModerationPage() {
                   ) : (
                     <Button
                       variant="ghost"
-                      className="text-critical-600"
+                      className="text-bad"
                       onClick={() => {
                         setTarget(row);
                         setReason('');
@@ -168,10 +168,10 @@ export function ModerationPage() {
                   )}
                 </div>
 
-                <p className="text-sm text-ink-700">{row.text}</p>
+                <p className="text-sm text-body">{row.text}</p>
 
                 {row.withheld && row.withheld_reason ? (
-                  <p className="mt-2 text-xs text-critical-600">
+                  <p className="mt-2 text-xs text-bad">
                     Withheld — {row.withheld_reason}
                   </p>
                 ) : null}
@@ -203,7 +203,7 @@ export function ModerationPage() {
       >
         <div className="flex flex-col gap-3">
           {target ? (
-            <blockquote className="rounded-md bg-ink-50 p-3 text-sm text-ink-700">
+            <blockquote className="rounded-md bg-sunken p-3 text-sm text-body">
               {target.text}
             </blockquote>
           ) : null}

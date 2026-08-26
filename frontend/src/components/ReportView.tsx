@@ -11,12 +11,15 @@ import { Alert, Card } from '@/components/ui';
 
 const RATINGS = ['1', '2', '3', '4', '5'] as const;
 
+// Mid-tones throughout. These are data rather than chrome, so they have to
+// stay separable from one another and stay ordered as a ramp on both a light
+// and a dark ground -- which the very light and very dark steps do not.
 const SHADES: Record<string, string> = {
-  '1': 'bg-critical-600',
-  '2': 'bg-caution-600',
-  '3': 'bg-ink-300',
-  '4': 'bg-accent-300',
-  '5': 'bg-accent-500',
+  '1': 'bg-critical-500',
+  '2': 'bg-caution-500',
+  '3': 'bg-ink-400',
+  '4': 'bg-accent-400',
+  '5': 'bg-brand',
 };
 
 /**
@@ -39,20 +42,20 @@ export function Mean({
   if (value === null) {
     if (responses !== undefined && responses > 0) {
       return (
-        <span className="text-ink-400">
+        <span className="text-faint">
           Too few to average
           <span className="ml-1 tabular-nums">({responses})</span>
         </span>
       );
     }
-    return <span className="text-ink-400">No responses</span>;
+    return <span className="text-faint">No responses</span>;
   }
 
   return (
     <span className="whitespace-nowrap">
       <span className="font-medium tabular-nums">{value.toFixed(2)}</span>
       {range && range[1] - range[0] > 0.01 ? (
-        <span className="ml-1 text-xs tabular-nums text-ink-400">
+        <span className="ml-1 text-xs tabular-nums text-faint">
           ({range[0].toFixed(1)}–{range[1].toFixed(1)})
         </span>
       ) : null}
@@ -61,7 +64,7 @@ export function Mean({
 }
 
 export function Rate({ value }: { value: number | null }) {
-  if (value === null) return <span className="text-ink-400">&mdash;</span>;
+  if (value === null) return <span className="text-faint">&mdash;</span>;
   const percent = value * 100;
   const tone = percent >= 60 ? 'positive' : percent >= 30 ? 'caution' : 'critical';
   return <Badge tone={tone}>{percent.toFixed(0)}%</Badge>;
@@ -100,13 +103,13 @@ export function ReliabilityNote({
 /** The shape of the answers, without making anyone read five numbers. */
 function Distribution({ question }: { question: QuestionReport }) {
   if (question.responses === 0) {
-    return <span className="text-xs text-ink-400">No responses</span>;
+    return <span className="text-xs text-faint">No responses</span>;
   }
 
   return (
     <div className="flex items-center gap-2">
       <div
-        className="flex h-2 w-32 overflow-hidden rounded-full bg-ink-100"
+        className="flex h-2 w-32 overflow-hidden rounded-full bg-sunken"
         role="img"
         aria-label={RATINGS.map(
           (rating) => `${rating} star: ${question.counts[rating] ?? 0}`,
@@ -120,7 +123,7 @@ function Distribution({ question }: { question: QuestionReport }) {
           );
         })}
       </div>
-      <span className="text-xs tabular-nums text-ink-400">n={question.responses}</span>
+      <span className="text-xs tabular-nums text-faint">n={question.responses}</span>
     </div>
   );
 }
@@ -162,33 +165,33 @@ function CohortContext({
   return (
     <div className="mt-3">
       <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
-        <span className="text-xs uppercase text-ink-500">In context</span>
-        <span className="text-xs text-ink-500">{band.basis}</span>
+        <span className="text-xs uppercase text-muted">In context</span>
+        <span className="text-xs text-muted">{band.basis}</span>
       </div>
 
       <div
-        className="relative h-6 w-full rounded-md bg-ink-50"
+        className="relative h-6 w-full rounded-md bg-sunken"
         role="img"
         aria-label={`This subject scored ${mean.toFixed(2)}, ${where} of comparable subjects, which ran from ${band.p25.toFixed(2)} to ${band.p75.toFixed(2)} with a middle value of ${band.median.toFixed(2)}. Based on ${band.basis}.`}
       >
         {/* The middle half. */}
         <div
-          className="absolute inset-y-1 rounded-sm bg-accent-100"
+          className="absolute inset-y-1 rounded-sm bg-brand-soft"
           style={{ left: `${left}%`, width: `${width}%` }}
         />
         {/* The middle value of the cohort. */}
         <div
-          className="absolute inset-y-1 w-px bg-accent-300"
+          className="absolute inset-y-1 w-px bg-accent-400"
           style={{ left: `${place(band.median)}%` }}
         />
         {/* This subject. */}
         <div
-          className="absolute inset-y-0 w-0.5 rounded-full bg-accent-600"
+          className="absolute inset-y-0 w-0.5 rounded-full bg-brand-hover"
           style={{ left: `${marker}%` }}
         />
       </div>
 
-      <div className="mt-1 flex justify-between text-[11px] tabular-nums text-ink-400">
+      <div className="mt-1 flex justify-between text-[11px] tabular-nums text-faint">
         <span>1</span>
         <span>
           middle half {band.p25.toFixed(1)}–{band.p75.toFixed(1)}
@@ -196,7 +199,7 @@ function CohortContext({
         <span>5</span>
       </div>
 
-      <p className="mt-1.5 text-xs text-ink-500">
+      <p className="mt-1.5 text-xs text-muted">
         This subject is {where} of comparable subjects. The band is there to
         answer whether a score is unusual, not to place anyone in an order.
       </p>
@@ -225,7 +228,7 @@ function Comments({
 }) {
   if (state === 'window_open') {
     return (
-      <p className="text-sm text-ink-500">
+      <p className="text-sm text-muted">
         Written feedback appears here once the feedback period closes. It is held
         back until then so that nobody is reading criticism while marks are still
         being decided.
@@ -235,7 +238,7 @@ function Comments({
 
   if (state === 'too_few_responses') {
     return (
-      <p className="text-sm text-ink-500">
+      <p className="text-sm text-muted">
         Too few students responded for written feedback to be shown. With only a
         handful of replies, who wrote what is often guessable, so none of it is
         released.
@@ -244,7 +247,7 @@ function Comments({
   }
 
   if (comments.length === 0) {
-    return <p className="text-sm text-ink-400">Nobody wrote anything this time.</p>;
+    return <p className="text-sm text-faint">Nobody wrote anything this time.</p>;
   }
 
   const grouped = comments.reduce<Record<string, typeof comments>>((acc, comment) => {
@@ -256,7 +259,7 @@ function Comments({
     <div className="flex flex-col gap-4">
       {Object.entries(grouped).map(([prompt, entries]) => (
         <div key={prompt}>
-          <h4 className="mb-1.5 text-xs uppercase tracking-wide text-ink-500">
+          <h4 className="mb-1.5 text-xs uppercase tracking-wide text-muted">
             {PROMPT_HEADING[prompt] ?? prompt}
           </h4>
           <ul className="flex flex-col gap-2">
@@ -265,12 +268,12 @@ function Comments({
                 key={comment.id}
                 className={
                   comment.withheld
-                    ? 'rounded-md border border-critical-600 bg-critical-100/40 p-3 text-sm text-ink-700'
-                    : 'rounded-md bg-ink-50 p-3 text-sm text-ink-700'
+                    ? 'rounded-md border border-bad bg-bad-soft/40 p-3 text-sm text-body'
+                    : 'rounded-md bg-sunken p-3 text-sm text-body'
                 }
               >
                 {comment.withheld ? (
-                  <span className="mb-1 block text-xs font-medium text-critical-600">
+                  <span className="mb-1 block text-xs font-medium text-bad">
                     Withheld from the instructor
                     {comment.withheld_reason ? ` — ${comment.withheld_reason}` : ''}
                   </span>
@@ -297,19 +300,19 @@ export function AssignmentSection({ report }: { report: AssignmentReport }) {
 
         <dl className="flex flex-wrap gap-x-8 gap-y-2 text-sm">
           <div>
-            <dt className="text-xs uppercase text-ink-500">Overall</dt>
+            <dt className="text-xs uppercase text-muted">Overall</dt>
             <dd>
               <Mean value={report.mean} responses={report.responses} />
             </dd>
           </div>
           <div>
-            <dt className="text-xs uppercase text-ink-500">Responses</dt>
+            <dt className="text-xs uppercase text-muted">Responses</dt>
             <dd className="tabular-nums">
               {report.responses} of {report.eligible_students}
             </dd>
           </div>
           <div>
-            <dt className="text-xs uppercase text-ink-500">Response rate</dt>
+            <dt className="text-xs uppercase text-muted">Response rate</dt>
             <dd>
               <Rate value={report.response_rate} />
             </dd>
@@ -322,15 +325,15 @@ export function AssignmentSection({ report }: { report: AssignmentReport }) {
       <div className="flex flex-col gap-5">
         {report.criteria.map((criterion) => (
           <section key={criterion.criterion_id}>
-            <header className="mb-2 flex items-baseline justify-between border-b border-ink-100 pb-1">
-              <h3 className="text-sm font-semibold text-ink-800">{criterion.name}</h3>
+            <header className="mb-2 flex items-baseline justify-between border-b border-line pb-1">
+              <h3 className="text-sm font-semibold text-heading">{criterion.name}</h3>
               <Mean value={criterion.mean} responses={report.responses} />
             </header>
 
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-xs uppercase text-ink-500">
+                  <tr className="text-left text-xs uppercase text-muted">
                     <th scope="col" className="py-1 font-medium">
                       Question
                     </th>
@@ -344,11 +347,11 @@ export function AssignmentSection({ report }: { report: AssignmentReport }) {
                 </thead>
                 <tbody>
                   {criterion.questions.map((question) => (
-                    <tr key={question.question_id} className="border-t border-ink-100">
-                      <td className="py-2 pr-4 text-ink-700">
+                    <tr key={question.question_id} className="border-t border-line">
+                      <td className="py-2 pr-4 text-body">
                         {question.text}
                         {question.curriculum ? (
-                          <span className="ml-2 whitespace-nowrap text-xs text-ink-400">
+                          <span className="ml-2 whitespace-nowrap text-xs text-faint">
                             asked only in {question.curriculum}
                           </span>
                         ) : null}
@@ -372,8 +375,8 @@ export function AssignmentSection({ report }: { report: AssignmentReport }) {
         ))}
       </div>
 
-      <section className="mt-6 border-t border-ink-100 pt-4">
-        <h3 className="mb-2 text-sm font-semibold text-ink-800">
+      <section className="mt-6 border-t border-line pt-4">
+        <h3 className="mb-2 text-sm font-semibold text-heading">
           In students' own words
         </h3>
         <Comments comments={report.comments} state={report.comment_state} />

@@ -19,3 +19,6 @@ Thumbs.db
 .env
 .env.*
 !.env.example
+
+# Editor/agent scratch that is machine-specific.
+.claude/

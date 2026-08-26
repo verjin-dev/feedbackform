@@ -69,7 +69,7 @@ export function SignInLinksPage() {
       {error ? <Alert>{error}</Alert> : null}
 
       <Card title="College sign-in">
-        <p className="mb-4 max-w-prose text-sm text-ink-500">
+        <p className="mb-4 max-w-prose text-sm text-muted">
           Staff who can sign in with their college account instead of a
           password. Removing a link never touches the account or its history —
           the person keeps their password, their assignments and everything
@@ -87,16 +87,16 @@ export function SignInLinksPage() {
 
         <div className="mt-4 overflow-x-auto">
           {links.isLoading ? (
-            <p className="py-6 text-center text-sm text-ink-400" role="status">
+            <p className="py-6 text-center text-sm text-faint" role="status">
               Loading...
             </p>
           ) : rows.length === 0 ? (
-            <p className="py-6 text-center text-sm text-ink-400">
+            <p className="py-6 text-center text-sm text-faint">
               Nobody has signed in with a college account yet.
             </p>
           ) : (
             <table className="w-full min-w-[40rem] text-left text-sm">
-              <thead className="text-xs text-ink-400">
+              <thead className="text-xs text-faint">
                 <tr>
                   <th scope="col" className="py-1 pr-4 font-medium">
                     Account
@@ -117,29 +117,29 @@ export function SignInLinksPage() {
               </thead>
               <tbody>
                 {rows.map((row) => (
-                  <tr key={row.id} className="border-t border-ink-100">
+                  <tr key={row.id} className="border-t border-line">
                     <td className="py-2 pr-4">
-                      <div className="text-ink-800">{row.account_name}</div>
-                      <div className="text-xs text-ink-400">{row.account_email}</div>
+                      <div className="text-heading">{row.account_name}</div>
+                      <div className="text-xs text-faint">{row.account_email}</div>
                     </td>
                     <td className="py-2 pr-4">
-                      <span className="text-ink-700">{row.email_at_link}</span>
+                      <span className="text-body">{row.email_at_link}</span>
                       {row.stale ? (
                         <span className="ml-2">
                           <Badge tone="caution">no longer matches</Badge>
                         </span>
                       ) : null}
                     </td>
-                    <td className="py-2 pr-4 text-ink-500 tabular-nums">
+                    <td className="py-2 pr-4 text-muted tabular-nums">
                       {when(row.linked_at)}
                     </td>
-                    <td className="py-2 pr-4 text-ink-500 tabular-nums">
+                    <td className="py-2 pr-4 text-muted tabular-nums">
                       {when(row.last_used_at)}
                     </td>
                     <td className="py-2 text-right">
                       <Button
                         variant="ghost"
-                        className="text-critical-600"
+                        className="text-bad"
                         onClick={() => setRemoving(row)}
                       >
                         Unlink

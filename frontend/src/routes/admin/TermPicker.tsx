@@ -34,12 +34,12 @@ export function TermPicker({
   onChange: (id: number) => void;
 }) {
   return (
-    <label className="flex items-center gap-2 text-sm text-ink-600">
+    <label className="flex items-center gap-2 text-sm text-muted">
       <span>Academic year</span>
       <select
         value={value ?? ''}
         onChange={(event) => onChange(Number(event.target.value))}
-        className="rounded-md bg-white px-2 py-1.5 text-sm text-ink-800 ring-1 ring-ink-200"
+        className="rounded-md bg-surface px-2 py-1.5 text-sm text-heading ring-1 ring-line-strong"
       >
         {terms === undefined || terms.length === 0 ? (
           <option value="">No years yet</option>

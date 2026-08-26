@@ -22,7 +22,10 @@ export function LanguagePicker({ className }: { className?: string }) {
           const next = event.target.value;
           if (isLanguage(next)) void setLanguage(next);
         }}
-        className="rounded-md bg-white px-2 py-1.5 text-sm text-ink-800 ring-1 ring-ink-200 disabled:opacity-60"
+        // 40px tall on a phone. This is the control a student who cannot
+        // read the rest of the page has to find and hit, so it is not the
+        // one to shrink for header space.
+        className="min-h-10 rounded-md bg-surface px-2.5 text-sm text-body ring-1 ring-line-strong disabled:opacity-60"
       >
         {LANGUAGES.map((code) => (
           <option key={code} value={code} lang={code}>

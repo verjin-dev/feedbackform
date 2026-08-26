@@ -165,7 +165,7 @@ export function AccountsPage({ role, title }: { role: Role; title: string }) {
               </Button>
               <Button
                 variant="ghost"
-                className="text-critical-600"
+                className="text-bad"
                 onClick={() => setDeleting(row)}
               >
                 Delete
@@ -228,7 +228,7 @@ export function AccountsPage({ role, title }: { role: Role; title: string }) {
 
               {role === 'student' ? (
                 <div className="flex flex-col gap-1.5">
-                  <label htmlFor="class-select" className="text-sm font-medium text-ink-700">
+                  <label htmlFor="class-select" className="text-sm font-medium text-body">
                     Class
                   </label>
                   <select
@@ -241,7 +241,7 @@ export function AccountsPage({ role, title }: { role: Role; title: string }) {
                         event.target.value === '' ? null : Number(event.target.value),
                       )
                     }
-                    className="rounded-md bg-white px-3 py-2 text-sm text-ink-800 ring-1 ring-ink-200"
+                    className="rounded-md bg-surface px-3 py-2 text-sm text-heading ring-1 ring-line-strong"
                   >
                     <option value="">Select a class</option>
                     {classList.data?.map((group) => (

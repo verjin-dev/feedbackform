@@ -43,14 +43,14 @@ function PaceBars({ counts, total }: { counts: Record<string, number>; total: nu
         const share = (value / total) * 100;
         return (
           <li key={key} className="flex items-center gap-2 text-xs">
-            <span className="w-24 shrink-0 text-ink-500">{PACE_LABELS[key]}</span>
-            <span className="h-2 flex-1 overflow-hidden rounded-full bg-ink-100">
+            <span className="w-24 shrink-0 text-muted">{PACE_LABELS[key]}</span>
+            <span className="h-2 flex-1 overflow-hidden rounded-full bg-sunken">
               <span
-                className={key === '3' ? 'block h-full bg-accent-500' : 'block h-full bg-accent-300'}
+                className={key === '3' ? 'block h-full bg-brand' : 'block h-full bg-accent-400'}
                 style={{ width: `${share}%` }}
               />
             </span>
-            <span className="w-6 text-right tabular-nums text-ink-400">{value}</span>
+            <span className="w-6 text-right tabular-nums text-faint">{value}</span>
           </li>
         );
       })}
@@ -131,12 +131,12 @@ export function PulsePage() {
       {error ? <Alert>{error}</Alert> : null}
 
       <Card title="Mid-term check">
-        <p className="max-w-prose text-sm text-ink-500">
+        <p className="max-w-prose text-sm text-muted">
           A three-question check you can run partway through a subject. Unlike
           the end-of-term evaluation, this one can still change the experience of
           the students who answered it.
         </p>
-        <ul className="mt-3 flex list-disc flex-col gap-1 pl-5 text-sm text-ink-500">
+        <ul className="mt-3 flex list-disc flex-col gap-1 pl-5 text-sm text-muted">
           <li>Only you can see the replies. Not your head of department, not an
             administrator.</li>
           <li>It never appears in your results, an accreditation export, or any
@@ -147,12 +147,12 @@ export function PulsePage() {
       </Card>
 
       {rounds.isLoading ? (
-        <p className="py-6 text-center text-sm text-ink-400" role="status">
+        <p className="py-6 text-center text-sm text-faint" role="status">
           Loading...
         </p>
       ) : data.length === 0 ? (
         <Card>
-          <p className="py-4 text-center text-sm text-ink-400">
+          <p className="py-4 text-center text-sm text-faint">
             You have not run one yet. Start a check from any subject on your
             results page.
           </p>
@@ -178,7 +178,7 @@ export function PulsePage() {
                 ) : null}
                 <Button
                   variant="ghost"
-                  className="text-critical-600"
+                  className="text-bad"
                   onClick={() => setDiscarding(round)}
                 >
                   Discard
@@ -186,7 +186,7 @@ export function PulsePage() {
               </div>
             }
           >
-            <p className="mb-3 text-sm text-ink-500">
+            <p className="mb-3 text-sm text-muted">
               {round.replies} of {round.eligible} replied
               {round.is_open ? ' so far' : ''}.
             </p>
@@ -199,30 +199,30 @@ export function PulsePage() {
             ) : (
               <div className="flex flex-col gap-4">
                 <div>
-                  <h3 className="mb-2 text-sm font-semibold text-ink-800">Pace</h3>
+                  <h3 className="mb-2 text-sm font-semibold text-heading">Pace</h3>
                   <PaceBars counts={round.pace_counts} total={round.replies} />
                 </div>
 
                 <div>
-                  <h3 className="mb-1 text-sm font-semibold text-ink-800">
+                  <h3 className="mb-1 text-sm font-semibold text-heading">
                     &ldquo;I know what is expected of me&rdquo;
                   </h3>
-                  <p className="text-sm tabular-nums text-ink-700">
+                  <p className="text-sm tabular-nums text-body">
                     {round.clarity_mean?.toFixed(2) ?? '—'}{' '}
-                    <span className="text-xs text-ink-400">out of 5</span>
+                    <span className="text-xs text-faint">out of 5</span>
                   </p>
                 </div>
 
                 {round.suggestions.length > 0 ? (
                   <div>
-                    <h3 className="mb-2 text-sm font-semibold text-ink-800">
+                    <h3 className="mb-2 text-sm font-semibold text-heading">
                       One thing that would help right now
                     </h3>
                     <ul className="flex flex-col gap-2">
                       {round.suggestions.map((suggestion, index) => (
                         <li
                           key={index}
-                          className="rounded-md bg-ink-50 p-3 text-sm text-ink-700"
+                          className="rounded-md bg-sunken p-3 text-sm text-body"
                         >
                           {suggestion}
                         </li>
@@ -242,11 +242,11 @@ export function PulsePage() {
             {startable.map((assignment) => (
               <li
                 key={assignment.assignment_id}
-                className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 pb-2 last:border-0"
+                className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2 last:border-0"
               >
-                <span className="text-sm text-ink-700">
+                <span className="text-sm text-body">
                   {assignment.subject_code}{' '}
-                  <span className="text-ink-400">{assignment.class_label}</span>
+                  <span className="text-faint">{assignment.class_label}</span>
                 </span>
                 <Button
                   variant="secondary"

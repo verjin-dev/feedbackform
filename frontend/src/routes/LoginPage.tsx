@@ -12,7 +12,9 @@ import { ApiError, api } from '@/api/client';
 import { landingFor } from '@/auth/landing';
 import { useAuth } from '@/auth/useAuth';
 import { FullPageSpinner } from '@/auth/RequireRole';
+import { Icons } from '@/components/icons';
 import { Alert, Button, Field } from '@/components/ui';
+import { ThemeToggle } from '@/theme/ThemeToggle';
 import { LanguagePicker } from '@/i18n/LanguagePicker';
 import { useLanguage } from '@/i18n/useLanguage';
 
@@ -69,23 +71,42 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-5" lang={language}>
-      <div className="w-full max-w-sm">
-        <div className="mb-6 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-xl font-semibold text-ink-900">{t('app.title')}</h1>
-            <p className="mt-1 text-sm text-ink-500">
-              Sign in with your college email address.
-            </p>
-          </div>
-          {/* Offered before signing in, not after: a student who cannot read
-              this page cannot reach a setting that lives behind it. */}
-          <LanguagePicker />
+    <div className="relative flex min-h-screen flex-col p-5" lang={language}>
+      {/* A single soft wash behind the card. Enough to stop the page reading
+          as a blank sheet, not so much that it competes with the one form on
+          it. Pointer-events off so it can never eat a click on the field
+          underneath. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 overflow-hidden"
+      >
+        <div className="absolute -top-40 left-1/2 size-[36rem] -translate-x-1/2 rounded-full bg-brand/8 blur-3xl" />
+      </div>
+
+      <div className="relative ml-auto flex items-center gap-2">
+        {/* Both offered before signing in, not after: somebody who cannot
+            read this page cannot reach a setting that lives behind it. */}
+        <LanguagePicker />
+        <ThemeToggle />
+      </div>
+
+      <div className="relative m-auto w-full max-w-sm py-8">
+        <div className="animate-rise mb-7 flex flex-col items-center text-center">
+          <span
+            aria-hidden="true"
+            className="mb-4 grid size-12 place-items-center rounded-2xl bg-brand text-lg font-bold text-on-brand shadow-e2"
+          >
+            F
+          </span>
+          <h1 className="text-2xl font-semibold text-heading">{t('app.title')}</h1>
+          <p className="mt-1.5 text-sm text-muted">
+            Sign in with your college email address.
+          </p>
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col gap-4 rounded-lg bg-white p-6 ring-1 ring-ink-200"
+          className="animate-rise flex flex-col gap-4 rounded-2xl bg-raised p-6 shadow-e2 ring-1 ring-line"
           noValidate
         >
           {error ? <Alert>{error}</Alert> : null}
@@ -96,6 +117,9 @@ export function LoginPage() {
             type="email"
             name="email"
             autoComplete="username"
+            inputMode="email"
+            autoCapitalize="none"
+            spellCheck={false}
             required
             value={email}
             onChange={(event) => setEmail(event.target.value)}
@@ -111,7 +135,7 @@ export function LoginPage() {
             onChange={(event) => setPassword(event.target.value)}
           />
 
-          <Button type="submit" loading={submitting}>
+          <Button type="submit" size="lg" loading={submitting} className="mt-1 w-full">
             {submitting ? t('auth.signingIn') : t('auth.signIn')}
           </Button>
 
@@ -121,18 +145,19 @@ export function LoginPage() {
                   college directory account and are most of the people signing
                   in; putting the button they cannot use first would make the
                   form they need look like the fallback. */}
-              <div className="flex items-center gap-3 text-xs text-ink-400">
-                <span className="h-px flex-1 bg-ink-200" />
+              <div className="flex items-center gap-3 text-xs text-faint">
+                <span className="h-px flex-1 bg-line-strong" />
                 <span>or</span>
-                <span className="h-px flex-1 bg-ink-200" />
+                <span className="h-px flex-1 bg-line-strong" />
               </div>
               <a
                 href="/api/auth/sso/start"
-                className="flex min-h-11 items-center justify-center rounded-md bg-white px-4 text-sm font-medium text-ink-800 ring-1 ring-ink-200 hover:bg-ink-50"
+                className="flex min-h-11 items-center justify-center gap-2 rounded-md bg-surface px-4 text-sm font-medium text-body shadow-e1 ring-1 ring-line-strong transition-colors hover:bg-sunken"
               >
+                <Icons.key className="size-4 text-muted" />
                 Sign in with {sso.data.label}
               </a>
-              <p className="text-center text-xs text-ink-400">
+              <p className="text-center text-xs text-faint">
                 For staff. Students sign in above.
               </p>
             </>
@@ -140,15 +165,15 @@ export function LoginPage() {
 
           <Link
             to="/forgot-password"
-            className="text-center text-sm text-accent-600 hover:underline"
+            className="text-center text-sm text-brand-text hover:underline"
           >
             Forgotten your password?
           </Link>
         </form>
 
         {/* The legacy form asked people to pick "Student / Faculty /
-            Hod-Principal" from a dropdown, which selected the database table to
-            authenticate against. The role comes from the account now, so
+            Hod-Principal" from a dropdown, which selected the database table
+            to authenticate against. The role comes from the account now, so
             there is nothing here to choose. */}
       </div>
     </div>

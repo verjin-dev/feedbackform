@@ -53,7 +53,7 @@ export function Sparkline({ points, label }: { points: TrendPoint[]; label: stri
   const published = points.filter((point) => point.mean !== null);
 
   if (published.length === 0) {
-    return <span className="text-xs text-ink-400">Not enough data yet</span>;
+    return <span className="text-xs text-faint">Not enough data yet</span>;
   }
 
   const runs: { index: number; point: TrendPoint }[][] = [];
@@ -93,7 +93,7 @@ export function Sparkline({ points, label }: { points: TrendPoint[]; label: stri
           x2={WIDTH}
           y1={y(3)}
           y2={y(3)}
-          className="stroke-ink-200"
+          className="stroke-line-strong"
           strokeWidth={1}
           strokeDasharray="2 3"
         />
@@ -102,7 +102,7 @@ export function Sparkline({ points, label }: { points: TrendPoint[]; label: stri
           <polyline
             key={runIndex}
             fill="none"
-            className="stroke-accent-500"
+            className="stroke-brand"
             strokeWidth={1.75}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -121,7 +121,7 @@ export function Sparkline({ points, label }: { points: TrendPoint[]; label: stri
               cx={x(index, points.length)}
               cy={y(3)}
               r={2}
-              className="fill-transparent stroke-ink-300"
+              className="fill-transparent stroke-line-strong"
               strokeWidth={1}
             />
           ) : (
@@ -130,22 +130,22 @@ export function Sparkline({ points, label }: { points: TrendPoint[]; label: stri
               cx={x(index, points.length)}
               cy={y(point.mean)}
               r={index === points.length - 1 ? 3 : 2}
-              className={index === points.length - 1 ? 'fill-accent-600' : 'fill-accent-300'}
+              className={index === points.length - 1 ? 'fill-brand' : 'fill-accent-400'}
             />
           ),
         )}
       </svg>
 
-      <span className="text-xs tabular-nums text-ink-500">
+      <span className="text-xs tabular-nums text-muted">
         {(last.mean as number).toFixed(2)}
         {published.length > 1 ? (
           <span
             className={
               direction > 0.05
-                ? 'ml-1 text-positive-600'
+                ? 'ml-1 text-good'
                 : direction < -0.05
-                  ? 'ml-1 text-critical-600'
-                  : 'ml-1 text-ink-400'
+                  ? 'ml-1 text-bad'
+                  : 'ml-1 text-faint'
             }
           >
             {direction > 0.05 ? '↑' : direction < -0.05 ? '↓' : '→'}
@@ -170,7 +170,7 @@ export function TrendPanel({ facultyId }: { facultyId: number | 'me' }) {
   if (trend.isLoading) {
     return (
       <Card title="Over time">
-        <p className="py-4 text-center text-sm text-ink-400" role="status">
+        <p className="py-4 text-center text-sm text-faint" role="status">
           Loading...
         </p>
       </Card>
@@ -183,7 +183,7 @@ export function TrendPanel({ facultyId }: { facultyId: number | 'me' }) {
   if (data.terms.length === 0) {
     return (
       <Card title="Over time">
-        <p className="text-sm text-ink-400">
+        <p className="text-sm text-faint">
           Nothing to compare yet. A second term of feedback is what turns this
           from a verdict into a direction.
         </p>
@@ -194,7 +194,7 @@ export function TrendPanel({ facultyId }: { facultyId: number | 'me' }) {
   if (data.terms.length === 1) {
     return (
       <Card title="Over time">
-        <p className="text-sm text-ink-500">
+        <p className="text-sm text-muted">
           This is the first term with feedback, so there is nothing to compare
           it against yet.
         </p>
@@ -209,8 +209,8 @@ export function TrendPanel({ facultyId }: { facultyId: number | 'me' }) {
       <div className="flex flex-col gap-5">
         <div>
           <div className="mb-1 flex items-baseline justify-between gap-3">
-            <h3 className="text-sm font-semibold text-ink-800">Across everything</h3>
-            <span className="text-xs text-ink-400">
+            <h3 className="text-sm font-semibold text-heading">Across everything</h3>
+            <span className="text-xs text-faint">
               {data.terms[0]?.label} → {data.terms[data.terms.length - 1]?.label}
             </span>
           </div>
@@ -219,14 +219,14 @@ export function TrendPanel({ facultyId }: { facultyId: number | 'me' }) {
 
         {data.criteria.length > 0 ? (
           <div>
-            <h3 className="mb-2 text-sm font-semibold text-ink-800">By criterion</h3>
+            <h3 className="mb-2 text-sm font-semibold text-heading">By criterion</h3>
             <ul className="flex flex-col gap-2">
               {data.criteria.map((series) => (
                 <li
                   key={series.criterion_id}
-                  className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 pb-2 last:border-0"
+                  className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2 last:border-0"
                 >
-                  <span className="text-sm text-ink-700">{series.name}</span>
+                  <span className="text-sm text-body">{series.name}</span>
                   <Sparkline points={series.points} label={series.name} />
                 </li>
               ))}
@@ -236,15 +236,15 @@ export function TrendPanel({ facultyId }: { facultyId: number | 'me' }) {
 
         {data.subjects.length > 1 ? (
           <div>
-            <h3 className="mb-2 text-sm font-semibold text-ink-800">By subject</h3>
+            <h3 className="mb-2 text-sm font-semibold text-heading">By subject</h3>
             <ul className="flex flex-col gap-2">
               {data.subjects.map((series) => (
                 <li
                   key={series.subject_id}
-                  className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 pb-2 last:border-0"
+                  className="flex flex-wrap items-center justify-between gap-3 border-b border-line pb-2 last:border-0"
                 >
-                  <span className="text-sm text-ink-700">
-                    {series.code} <span className="text-ink-400">{series.name}</span>
+                  <span className="text-sm text-body">
+                    {series.code} <span className="text-faint">{series.name}</span>
                   </span>
                   <Sparkline points={series.points} label={series.code} />
                 </li>
@@ -262,7 +262,7 @@ export function TrendPanel({ facultyId }: { facultyId: number | 'me' }) {
           </Alert>
         ) : null}
 
-        <p className="text-xs text-ink-400">
+        <p className="text-xs text-faint">
           Lines are drawn against the full 1–5 scale, not zoomed to the range of
           the data, so a small change looks small.
         </p>

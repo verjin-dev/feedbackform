@@ -28,8 +28,8 @@ function Change({ line }: { line: string }) {
   const [field, rest] = line.split(/:\s(.+)/);
   return (
     <div className="flex flex-wrap gap-x-2 text-xs">
-      <span className="font-medium text-ink-600">{field}</span>
-      <span className="text-ink-500">{rest}</span>
+      <span className="font-medium text-muted">{field}</span>
+      <span className="text-muted">{rest}</span>
     </div>
   );
 }
@@ -63,12 +63,12 @@ export function AuditPage() {
       <Card
         title="Change log"
         actions={
-          <label className="flex items-center gap-2 text-sm text-ink-600">
+          <label className="flex items-center gap-2 text-sm text-muted">
             <span>Show</span>
             <select
               value={entityType}
               onChange={(event) => setEntityType(event.target.value)}
-              className="rounded-md bg-white px-2 py-1.5 text-sm text-ink-800 ring-1 ring-ink-200"
+              className="rounded-md bg-surface px-2 py-1.5 text-sm text-heading ring-1 ring-line-strong"
             >
               <option value="">Everything</option>
               {types.data?.map((type) => (
@@ -80,23 +80,23 @@ export function AuditPage() {
           </label>
         }
       >
-        <p className="mb-4 max-w-prose text-sm text-ink-500">
+        <p className="mb-4 max-w-prose text-sm text-muted">
           Who changed the questionnaire, the assignments, the accounts, or the
           state of an evaluation window — and when.
         </p>
 
-        <p className="max-w-prose rounded-md bg-positive-100 px-3 py-2 text-sm text-positive-600">
+        <p className="max-w-prose rounded-md bg-good-soft px-3 py-2 text-sm text-good">
           This log records configuration, not participation. It holds nothing
           about who submitted feedback or what they wrote, by design.
         </p>
 
         <div className="mt-4">
           {events.isLoading ? (
-            <p className="py-6 text-center text-sm text-ink-400" role="status">
+            <p className="py-6 text-center text-sm text-faint" role="status">
               Loading...
             </p>
           ) : rows.length === 0 ? (
-            <p className="py-6 text-center text-sm text-ink-400">
+            <p className="py-6 text-center text-sm text-faint">
               Nothing recorded yet.
             </p>
           ) : (
@@ -104,14 +104,14 @@ export function AuditPage() {
               {rows.map((event) => (
                 <li
                   key={event.id}
-                  className="flex flex-col gap-1 border-b border-ink-100 py-3 last:border-0"
+                  className="flex flex-col gap-1 border-b border-line py-3 last:border-0"
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge tone={ACTION_TONE[event.action]}>{event.action}</Badge>
-                    <span className="text-sm text-ink-800">{event.summary}</span>
+                    <span className="text-sm text-heading">{event.summary}</span>
                   </div>
 
-                  <div className="flex flex-wrap gap-x-2 text-xs text-ink-400">
+                  <div className="flex flex-wrap gap-x-2 text-xs text-faint">
                     <span>{event.actor_name}</span>
                     <span>·</span>
                     <span>{event.actor_email}</span>
@@ -122,7 +122,7 @@ export function AuditPage() {
                   </div>
 
                   {event.changes ? (
-                    <div className="mt-1 flex flex-col gap-0.5 rounded-md bg-ink-50 px-3 py-2">
+                    <div className="mt-1 flex flex-col gap-0.5 rounded-md bg-sunken px-3 py-2">
                       {event.changes.split('\n').map((line) => (
                         <Change key={line} line={line} />
                       ))}

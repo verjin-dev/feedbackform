@@ -220,19 +220,19 @@ export function QuestionnairePage() {
         }
       >
         {criterionList.data?.length === 0 ? (
-          <p className="py-6 text-center text-sm text-ink-400">
+          <p className="py-6 text-center text-sm text-faint">
             Add criteria first — questions are grouped under them.
           </p>
         ) : groups.length === 0 ? (
-          <p className="py-6 text-center text-sm text-ink-400">
+          <p className="py-6 text-center text-sm text-faint">
             No questions for {term?.year ?? 'this year'} yet.
           </p>
         ) : (
           <div className="flex flex-col gap-6">
             {groups.map((group, groupIndex) => (
               <section key={group.criterion.id}>
-                <header className="mb-2 flex items-center justify-between gap-2 border-b border-ink-100 pb-1">
-                  <h3 className="text-sm font-semibold text-ink-800">
+                <header className="mb-2 flex items-center justify-between gap-2 border-b border-line pb-1">
+                  <h3 className="text-sm font-semibold text-heading">
                     {group.criterion.name}
                   </h3>
                   <div className="flex gap-1">
@@ -255,12 +255,12 @@ export function QuestionnairePage() {
                   {group.items.map((question, index) => (
                     <li
                       key={question.id}
-                      className="flex items-center gap-2 border-b border-ink-100 py-2 last:border-0"
+                      className="flex items-center gap-2 border-b border-line py-2 last:border-0"
                     >
-                      <span className="w-6 text-xs text-ink-400 tabular-nums">
+                      <span className="w-6 text-xs text-faint tabular-nums">
                         {index + 1}.
                       </span>
-                      <span className="flex-1 text-sm text-ink-700">{question.text}</span>
+                      <span className="flex-1 text-sm text-body">{question.text}</span>
                       {question.curriculum ? (
                         <Badge tone="caution">{question.curriculum} only</Badge>
                       ) : null}
@@ -297,7 +297,7 @@ export function QuestionnairePage() {
                       </Button>
                       <Button
                         variant="ghost"
-                        className="text-critical-600"
+                        className="text-bad"
                         onClick={() => setDeleting(question)}
                       >
                         Delete
@@ -313,7 +313,7 @@ export function QuestionnairePage() {
 
       {termId !== null && groups.length === 0 && (termList.data?.length ?? 0) > 1 ? (
         <Card title="Start from a previous term">
-          <p className="mb-3 max-w-prose text-sm text-ink-500">
+          <p className="mb-3 max-w-prose text-sm text-muted">
             Copies the questions and their departments across. Retyping them is
             how the wording drifted between terms, and wording that changes
             without anyone deciding to change it makes the term-on-term
@@ -322,14 +322,14 @@ export function QuestionnairePage() {
           {copyError ? <Alert>{copyError}</Alert> : null}
           <div className="mt-3 flex flex-wrap items-end gap-2">
             <div className="flex flex-col gap-1.5">
-              <label htmlFor="copy-source" className="text-sm font-medium text-ink-700">
+              <label htmlFor="copy-source" className="text-sm font-medium text-body">
                 Copy from
               </label>
               <select
                 id="copy-source"
                 value={copySource ?? ''}
                 onChange={(event) => setCopySource(Number(event.target.value) || null)}
-                className="rounded-md bg-white px-3 py-2 text-sm text-ink-800 ring-1 ring-ink-200"
+                className="rounded-md bg-surface px-3 py-2 text-sm text-heading ring-1 ring-line-strong"
               >
                 <option value="">Choose a term</option>
                 {(termList.data ?? [])
@@ -407,7 +407,7 @@ export function QuestionnairePage() {
                   setDraft({ ...draft, text_ta: event.target.value })
                 }
               />
-              <p className="-mt-1 text-xs text-ink-400">
+              <p className="-mt-1 text-xs text-faint">
                 Left blank, Tamil readers see the English wording. The question
                 is still asked — an untranslated question falls back rather
                 than disappearing from their form.
@@ -415,7 +415,7 @@ export function QuestionnairePage() {
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="criterion-select"
-                  className="text-sm font-medium text-ink-700"
+                  className="text-sm font-medium text-body"
                 >
                   Criterion
                 </label>
@@ -425,7 +425,7 @@ export function QuestionnairePage() {
                   onChange={(event) =>
                     setDraft({ ...draft, criterion_id: Number(event.target.value) })
                   }
-                  className="rounded-md bg-white px-3 py-2 text-sm text-ink-800 ring-1 ring-ink-200"
+                  className="rounded-md bg-surface px-3 py-2 text-sm text-heading ring-1 ring-line-strong"
                 >
                   {criterionList.data?.map((criterion) => (
                     <option key={criterion.id} value={criterion.id}>
@@ -438,7 +438,7 @@ export function QuestionnairePage() {
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="scope-select"
-                  className="text-sm font-medium text-ink-700"
+                  className="text-sm font-medium text-body"
                 >
                   Who answers this
                 </label>
@@ -448,7 +448,7 @@ export function QuestionnairePage() {
                   onChange={(event) =>
                     setDraft({ ...draft, curriculum: event.target.value || null })
                   }
-                  className="rounded-md bg-white px-3 py-2 text-sm text-ink-800 ring-1 ring-ink-200"
+                  className="rounded-md bg-surface px-3 py-2 text-sm text-heading ring-1 ring-line-strong"
                 >
                   <option value="">Every department</option>
                   {departments.data?.map((department) => (
@@ -457,7 +457,7 @@ export function QuestionnairePage() {
                     </option>
                   ))}
                 </select>
-                <p className="text-xs text-ink-400">
+                <p className="text-xs text-faint">
                   A question limited to one department is left out of every other
                   department&apos;s form and report, rather than showing there
                   with no answers.
@@ -510,7 +510,7 @@ function MoveButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="rounded px-2 py-1 text-ink-400 hover:bg-ink-100 hover:text-ink-700 disabled:cursor-not-allowed disabled:opacity-30"
+      className="rounded px-2 py-1 text-faint hover:bg-sunken hover:text-body disabled:cursor-not-allowed disabled:opacity-30"
     >
       <span aria-hidden="true">{direction === 'up' ? '↑' : '↓'}</span>
     </button>
