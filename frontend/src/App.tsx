@@ -11,6 +11,7 @@ import {
   StudentsPage,
 } from '@/routes/admin/AccountsPage';
 import { AssignmentsPage } from '@/routes/admin/AssignmentsPage';
+import { ImportPage } from '@/routes/admin/ImportPage';
 import { OverviewPage } from '@/routes/admin/OverviewPage';
 import { QuestionnairePage } from '@/routes/admin/QuestionnairePage';
 import { ReportsPage } from '@/routes/admin/ReportsPage';
@@ -53,6 +54,7 @@ export function App() {
           <Route path="/admin/faculty" element={<FacultyPage />} />
           <Route path="/admin/students" element={<StudentsPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/import" element={<ImportPage />} />
           <Route path="/admin/reports" element={<ReportsPage />} />
         </Route>
       </Route>

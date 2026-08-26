@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -8,7 +8,9 @@ from app.core.database import get_session
 from app.core.security import hash_password
 from app.models import Account, ClassGroup, Role
 from app.schemas.auth import AccountOut
+from app.schemas.import_ import ImportReportOut
 from app.schemas.management import AccountCreate, AccountUpdate
+from app.services import account_import
 
 router = APIRouter(
     prefix="/accounts", tags=["accounts"], dependencies=[Depends(require_admin)]
@@ -122,4 +124,74 @@ def delete_account(
         account,
         "This account is referenced by teaching assignments or submitted "
         "evaluations. Deactivate it instead of deleting it.",
+    )
+
+
+MAX_IMPORT_BYTES = 2 * 1024 * 1024
+
+
+@router.post("/import", response_model=ImportReportOut)
+async def import_accounts(
+    file: UploadFile = File(...),
+    dry_run: bool = Query(True, description="Report only. Set false to write."),
+    on_existing: str = Query("skip", pattern="^(skip|update)$"),
+    db: Session = Depends(get_session),
+):
+    """Bulk-create accounts from a CSV.
+
+    Defaults to a dry run: the file is parsed, validated in full and reported
+    on without writing anything, so every problem is visible at once rather
+    than one failed upload at a time. Writing is opt-in, and happens only when
+    the whole file is clean — a partially imported roll is worse than none,
+    because the missing students are invisible until their response rates look
+    wrong.
+    """
+    content = await file.read()
+    if len(content) > MAX_IMPORT_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="That file is larger than 2 MB. Split it and import in parts.",
+        )
+
+    report = account_import.build_report(
+        db, content, dry_run=dry_run, on_existing=on_existing
+    )
+
+    if not dry_run:
+        if not report.ok:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    "The file has problems on "
+                    f"{report.errors or len(report.file_errors)} row(s). "
+                    "Nothing was imported. Run it as a dry run to see them all."
+                ),
+            )
+        account_import.apply(db, content, report, on_existing=on_existing)
+
+    return ImportReportOut(
+        dry_run=dry_run,
+        file_errors=report.file_errors,
+        total=len(report.rows),
+        created=report.created,
+        updated=report.updated,
+        skipped=report.skipped,
+        errors=report.errors,
+        ok=report.ok,
+        rows=[
+            {
+                "line": row.line,
+                "action": row.action,
+                "email": row.email,
+                "name": row.name,
+                "role": row.role,
+                "messages": row.messages,
+                # Never leak a password for a row that was only simulated as
+                # existing, and never for an update.
+                "generated_password": row.generated_password
+                if row.action == "create"
+                else None,
+            }
+            for row in report.rows
+        ],
     )
