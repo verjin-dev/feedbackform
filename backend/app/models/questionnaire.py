@@ -24,6 +24,9 @@ class Question(Base, TimestampMixin):
     __tablename__ = "question"
     __table_args__ = (
         Index("ix_question_term_criterion", "term_id", "criterion_id", "position"),
+        # The student-facing lookup: the questions this term asks of this
+        # department.
+        Index("ix_question_term_scope", "term_id", "curriculum"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -35,6 +38,21 @@ class Question(Base, TimestampMixin):
     )
     text: Mapped[str] = mapped_column(Text)
     position: Mapped[int] = mapped_column(SmallInteger, default=0)
+
+    # NULL means every department answers it. A value means only students whose
+    # class carries that curriculum are asked.
+    #
+    # There is no department entity in this schema; curriculum on the class
+    # group is the closest thing to one, and the reports already filter on it,
+    # so departments are spelled the same way here rather than introducing a
+    # second, competing notion of what a department is. Stored as entered and
+    # compared case-insensitively after stripping, because the legacy data has
+    # both "B.E. IT" and "B.E IT ".
+    curriculum: Mapped[str | None] = mapped_column(String(100))
+
+    @property
+    def is_core(self) -> bool:
+        return self.curriculum is None
 
     term: Mapped[AcademicTerm] = relationship()
     criterion: Mapped[Criterion] = relationship(lazy="joined")

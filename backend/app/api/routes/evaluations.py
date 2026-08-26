@@ -8,10 +8,10 @@ from app.core.database import get_session
 from app.models import (
     AcademicTerm,
     Account,
+    ClassGroup,
     EvaluationRating,
     EvaluationResponse,
     EvaluationSubmission,
-    Question,
     TeachingAssignment,
     TermStatus,
 )
@@ -25,7 +25,7 @@ from app.schemas.evaluation import (
     TermBrief,
 )
 from app.services import comments as comment_service
-from app.services.reporting import term_questionnaire
+from app.services.reporting import questionnaire_for
 
 router = APIRouter(tags=["evaluation"], dependencies=[Depends(require_student)])
 
@@ -38,6 +38,17 @@ def _current_term(db: Session) -> AcademicTerm:
             detail="No academic term is currently active.",
         )
     return term
+
+def _student_questionnaire(db: Session, student: Account, term: AcademicTerm):
+    """The core questionnaire plus this student's department block.
+
+    Resolved from the student's own class group rather than passed in, so the
+    set the form is drawn from and the set a submission is checked against
+    cannot drift apart -- a student answering exactly what they were shown and
+    being told a question is missing is the failure this shape rules out.
+    """
+    group = db.get(ClassGroup, student.class_group_id) if student.class_group_id else None
+    return questionnaire_for(db, term.id, group.curriculum if group else None)
 
 
 def _pending_query(term: AcademicTerm, student: Account):
@@ -88,6 +99,9 @@ def questionnaire(
     db: Session = Depends(get_session),
 ):
     term = _current_term(db)
+    # Every assignment a student can rate belongs to their own class group, so
+    # one student is asked one questionnaire: the shared core plus whatever
+    # their department adds.
     return QuestionnaireOut(
         term=TermBrief.model_validate(term),
         criteria=[
@@ -96,7 +110,7 @@ def questionnaire(
                 name=criterion.name,
                 questions=[{"id": q.id, "text": q.text} for q in questions],
             )
-            for criterion, questions in term_questionnaire(db, term.id)
+            for criterion, questions in _student_questionnaire(db, student, term)
         ],
         comment_prompts=[
             CommentPromptOut(prompt=prompt, text=text)
@@ -135,9 +149,11 @@ def submit_evaluation(
             status_code=status.HTTP_404_NOT_FOUND, detail="No such assignment for you."
         )
 
-    expected = set(
-        db.scalars(select(Question.id).where(Question.term_id == term.id)).all()
-    )
+    expected = {
+        question.id
+        for _, questions in _student_questionnaire(db, student, term)
+        for question in questions
+    }
     submitted = {rating.question_id for rating in payload.ratings}
 
     if not expected:

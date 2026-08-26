@@ -8,6 +8,7 @@ function question(overrides: Partial<QuestionReport> = {}): QuestionReport {
   return {
     question_id: 1,
     text: 'Explains concepts clearly.',
+    curriculum: null,
     counts: { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 },
     percentages: { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 },
     responses: 0,

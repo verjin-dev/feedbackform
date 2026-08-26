@@ -30,6 +30,7 @@ from app.services.reporting import (
     RATINGS,
     _safe_ratio,
     assignment_reports,
+    questionnaire_for,
     term_questionnaire,
 )
 
@@ -79,19 +80,37 @@ def curricula(db: Session) -> list[str]:
 
 # --- The instrument --------------------------------------------------------
 
-QUESTIONNAIRE_COLUMNS = ["criterion_order", "criterion", "question_order", "question"]
+QUESTIONNAIRE_COLUMNS = [
+    "criterion_order",
+    "criterion",
+    "question_order",
+    "question",
+    "who_answers",
+]
 
 
-def questionnaire_csv(db: Session, term: AcademicTerm) -> str:
+def questionnaire_csv(
+    db: Session, term: AcademicTerm, curriculum: str | None = None
+) -> str:
     """The questions actually asked, in the order they were asked.
 
     An assessor checking that feedback was collected against a stated
     instrument needs the instrument, not a description of it.
+
+    Since questions became department-scoped, a flat list is no longer the
+    whole instrument: a reader could not tell that one department never saw a
+    question, and would read its absence from the results as non-response.
+    `who_answers` names the population for each row. Filtered to a department,
+    the file is that department's instrument and nothing else.
     """
+    questionnaire = (
+        questionnaire_for(db, term.id, curriculum)
+        if curriculum is not None
+        else term_questionnaire(db, term.id)
+    )
+
     rows = []
-    for criterion_index, (criterion, questions) in enumerate(
-        term_questionnaire(db, term.id), start=1
-    ):
+    for criterion_index, (criterion, questions) in enumerate(questionnaire, start=1):
         for question_index, question in enumerate(questions, start=1):
             rows.append(
                 {
@@ -99,6 +118,7 @@ def questionnaire_csv(db: Session, term: AcademicTerm) -> str:
                     "criterion": criterion.name,
                     "question_order": question_index,
                     "question": question.text,
+                    "who_answers": question.curriculum or "All departments",
                 }
             )
     return _write(rows, QUESTIONNAIRE_COLUMNS)
@@ -210,7 +230,11 @@ def summary(db: Session, term: AcademicTerm, curriculum: str | None = None) -> d
 
     eligible = sum(r["eligible_students"] for r in reports)
     responses = sum(r["responses"] for r in reports)
-    questionnaire = term_questionnaire(db, term.id)
+    questionnaire = (
+        questionnaire_for(db, term.id, curriculum)
+        if curriculum is not None
+        else term_questionnaire(db, term.id)
+    )
 
     rated = [r for r in reports if r["mean"] is not None]
     withheld = [r for r in reports if r["mean"] is None]

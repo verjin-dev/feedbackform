@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 from app.models import (
     AcademicTerm,
     Account,
+    ClassGroup,
     Criterion,
     EvaluationResponse,
     EvaluationRating,
@@ -164,18 +165,22 @@ def _rating_counts(
     return tally
 
 
-def term_questionnaire(db: Session, term_id: int) -> list[tuple[Criterion, list[Question]]]:
-    """Criteria and their questions, in display order.
+def normalise_curriculum(value: str | None) -> str | None:
+    """One spelling of a department name, for comparison only.
 
-    Drives the report structure, which is why unanswered questions still
-    appear: the shape comes from the questionnaire, not from the answers.
+    The legacy data holds "B.E. IT", "B.E IT" and "b.e. it " for the same
+    department. Comparing them raw would silently drop a department block from
+    a questionnaire, and the student would never know a question was missing.
     """
-    questions = db.scalars(
-        select(Question)
-        .where(Question.term_id == term_id)
-        .order_by(Question.position, Question.id)
-    ).unique().all()
+    if value is None:
+        return None
+    cleaned = " ".join(value.split()).strip().lower()
+    return cleaned or None
 
+
+def _group_by_criterion(
+    db: Session, questions: list[Question]
+) -> list[tuple[Criterion, list[Question]]]:
     grouped: dict[int, list[Question]] = defaultdict(list)
     for question in questions:
         grouped[question.criterion_id].append(question)
@@ -189,6 +194,49 @@ def term_questionnaire(db: Session, term_id: int) -> list[tuple[Criterion, list[
     return [(criterion, grouped[criterion.id]) for criterion in criteria]
 
 
+def _term_questions(db: Session, term_id: int) -> list[Question]:
+    """Core first within each criterion, so a department block reads as an
+    addition to the shared questionnaire rather than as an interruption."""
+    questions = db.scalars(
+        select(Question)
+        .where(Question.term_id == term_id)
+        .order_by(Question.position, Question.id)
+    ).unique().all()
+    return sorted(questions, key=lambda q: q.curriculum is not None)
+
+
+def term_questionnaire(db: Session, term_id: int) -> list[tuple[Criterion, list[Question]]]:
+    """Every question defined for the term, whoever answers it.
+
+    This is the administrator's editing view. It is deliberately NOT what a
+    student is asked or what a report is shaped by: since questions became
+    department-scoped, using this to shape a report would print another
+    department's questions against an assignment with zero counts, which on the
+    page is indistinguishable from a question nobody answered. Those callers
+    use `questionnaire_for` instead.
+    """
+    return _group_by_criterion(db, _term_questions(db, term_id))
+
+
+def questionnaire_for(
+    db: Session, term_id: int, curriculum: str | None
+) -> list[tuple[Criterion, list[Question]]]:
+    """What one department is actually asked: the shared core plus its block.
+
+    A student's assignments are all within their own class group, so one
+    student sees one questionnaire; a report is shaped per assignment, from the
+    curriculum of the class that answered it.
+    """
+    wanted = normalise_curriculum(curriculum)
+    questions = [
+        question
+        for question in _term_questions(db, term_id)
+        if question.curriculum is None
+        or normalise_curriculum(question.curriculum) == wanted
+    ]
+    return _group_by_criterion(db, questions)
+
+
 def _build_question_report(question: Question, counts: dict[int, int]) -> dict:
     responses = sum(counts.values())
     publishable = responses >= MIN_RESPONSES_FOR_MEAN
@@ -196,6 +244,9 @@ def _build_question_report(question: Question, counts: dict[int, int]) -> dict:
     return {
         "question_id": question.id,
         "text": question.text,
+        # None for a question the whole college answers. Named so a mean over a
+        # department block is not silently compared with one over the core.
+        "curriculum": question.curriculum,
         "counts": {str(rating): counts.get(rating, 0) for rating in RATINGS},
         "percentages": {
             str(rating): (
@@ -246,14 +297,23 @@ def assignment_reports(
     eligible = _eligible_student_counts(db, class_ids)
     responses = _response_counts(db, assignment_ids)
     tally = _rating_counts(db, assignment_ids)
-    questionnaire = term_questionnaire(db, term.id)
+
+    # Resolved per department, and cached because a term has a handful of them
+    # while it has hundreds of assignments.
+    questionnaires: dict[str | None, list[tuple[Criterion, list[Question]]]] = {}
+
+    def questionnaire_for_class(group: ClassGroup):
+        key = normalise_curriculum(group.curriculum)
+        if key not in questionnaires:
+            questionnaires[key] = questionnaire_for(db, term.id, group.curriculum)
+        return questionnaires[key]
 
     reports = []
     for assignment in assignments:
         per_question = tally.get(assignment.id, {})
 
         criteria_reports = []
-        for criterion, questions in questionnaire:
+        for criterion, questions in questionnaire_for_class(assignment.class_group):
             question_reports = [
                 _build_question_report(
                     question, per_question.get(question.id, dict.fromkeys(RATINGS, 0))

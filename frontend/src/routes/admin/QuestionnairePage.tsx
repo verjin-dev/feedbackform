@@ -1,15 +1,38 @@
 import { useMemo, useState } from 'react';
 
 import { ApiError } from '@/api/client';
-import { criteria, questions, terms, useReorder } from '@/api/resources';
+import {
+  criteria,
+  questions,
+  terms,
+  useCopyQuestionnaire,
+  useDepartments,
+  useReorder,
+} from '@/api/resources';
 import type { Criterion, Question } from '@/api/types';
 import { ConfirmDialog, Dialog } from '@/components/Dialog';
 import { Alert, Button, Card, Field } from '@/components/ui';
+import { Badge } from '@/components/DataTable';
 import { TermPicker, useSelectedTerm } from '@/routes/admin/TermPicker';
 
 interface Group {
   criterion: Criterion;
   items: Question[];
+}
+
+interface QuestionDraft {
+  text: string;
+  criterion_id: number;
+  curriculum: string | null;
+}
+
+/** Everyone's questions first, then each department's block, so the list on
+ *  screen reads in the order a student meets it. */
+function byScope(a: Question, b: Question): number {
+  const scopeA = a.curriculum ?? '';
+  const scopeB = b.curriculum ?? '';
+  if (scopeA !== scopeB) return scopeA.localeCompare(scopeB);
+  return a.position - b.position || a.id - b.id;
 }
 
 function messageFrom(error: unknown, fallback: string): string {
@@ -43,10 +66,29 @@ export function QuestionnairePage() {
   );
 
   const [editing, setEditing] = useState<Question | null>(null);
-  const [draft, setDraft] = useState<{ text: string; criterion_id: number } | null>(null);
+  const [draft, setDraft] = useState<QuestionDraft | null>(null);
   const [deleting, setDeleting] = useState<Question | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [copySource, setCopySource] = useState<number | null>(null);
+  const [copyError, setCopyError] = useState<string | null>(null);
+
+  const departments = useDepartments();
+  const copyQuestionnaire = useCopyQuestionnaire();
+
+  async function copyForward() {
+    if (copySource === null || termId === null) return;
+    setCopyError(null);
+    try {
+      await copyQuestionnaire.mutateAsync({
+        source_term_id: copySource,
+        target_term_id: termId,
+      });
+      setCopySource(null);
+    } catch (cause) {
+      setCopyError(messageFrom(cause, 'Could not copy that questionnaire.'));
+    }
+  }
 
   /** Only criteria that have questions in this term appear, in criterion order —
    *  matching how the student sees the form. */
@@ -61,9 +103,7 @@ export function QuestionnairePage() {
       .filter((criterion) => byCriterion.has(criterion.id))
       .map((criterion) => ({
         criterion,
-        items: (byCriterion.get(criterion.id) ?? []).sort(
-          (a, b) => a.position - b.position || a.id - b.id,
-        ),
+        items: (byCriterion.get(criterion.id) ?? []).sort(byScope),
       }));
   }, [criterionList.data, questionList.data]);
 
@@ -110,6 +150,7 @@ export function QuestionnairePage() {
           term_id: termId,
           criterion_id: draft.criterion_id,
           text: draft.text,
+          curriculum: draft.curriculum,
         });
       } else {
         await updateQuestion.mutateAsync({ id: editing.id, body: draft });
@@ -151,7 +192,7 @@ export function QuestionnairePage() {
               onClick={() => {
                 if (firstCriterionId === null) return;
                 setEditing(null);
-                setDraft({ text: '', criterion_id: firstCriterionId });
+                setDraft({ text: '', criterion_id: firstCriterionId, curriculum: null });
                 setFormError(null);
               }}
               disabled={firstCriterionId === null || termId === null}
@@ -208,6 +249,9 @@ export function QuestionnairePage() {
                         {index + 1}.
                       </span>
                       <span className="flex-1 text-sm text-ink-700">{question.text}</span>
+                      {question.curriculum ? (
+                        <Badge tone="caution">{question.curriculum} only</Badge>
+                      ) : null}
 
                       <MoveButton
                         label={`Move question ${index + 1} up`}
@@ -228,6 +272,7 @@ export function QuestionnairePage() {
                           setDraft({
                             text: question.text,
                             criterion_id: question.criterion_id,
+                            curriculum: question.curriculum,
                           });
                           setFormError(null);
                         }}
@@ -249,6 +294,47 @@ export function QuestionnairePage() {
           </div>
         )}
       </Card>
+
+      {termId !== null && groups.length === 0 && (termList.data?.length ?? 0) > 1 ? (
+        <Card title="Start from a previous term">
+          <p className="mb-3 max-w-prose text-sm text-ink-500">
+            Copies the questions and their departments across. Retyping them is
+            how the wording drifted between terms, and wording that changes
+            without anyone deciding to change it makes the term-on-term
+            comparison a comparison of two different questions.
+          </p>
+          {copyError ? <Alert>{copyError}</Alert> : null}
+          <div className="mt-3 flex flex-wrap items-end gap-2">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="copy-source" className="text-sm font-medium text-ink-700">
+                Copy from
+              </label>
+              <select
+                id="copy-source"
+                value={copySource ?? ''}
+                onChange={(event) => setCopySource(Number(event.target.value) || null)}
+                className="rounded-md bg-white px-3 py-2 text-sm text-ink-800 ring-1 ring-ink-200"
+              >
+                <option value="">Choose a term</option>
+                {(termList.data ?? [])
+                  .filter((candidate) => candidate.id !== termId)
+                  .map((candidate) => (
+                    <option key={candidate.id} value={candidate.id}>
+                      {candidate.year} semester {candidate.semester}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <Button
+              disabled={copySource === null}
+              loading={copyQuestionnaire.isPending}
+              onClick={() => void copyForward()}
+            >
+              Copy questionnaire
+            </Button>
+          </div>
+        </Card>
+      ) : null}
 
       <Dialog
         open={draft !== null}
@@ -317,6 +403,35 @@ export function QuestionnairePage() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="scope-select"
+                  className="text-sm font-medium text-ink-700"
+                >
+                  Who answers this
+                </label>
+                <select
+                  id="scope-select"
+                  value={draft.curriculum ?? ''}
+                  onChange={(event) =>
+                    setDraft({ ...draft, curriculum: event.target.value || null })
+                  }
+                  className="rounded-md bg-white px-3 py-2 text-sm text-ink-800 ring-1 ring-ink-200"
+                >
+                  <option value="">Every department</option>
+                  {departments.data?.map((department) => (
+                    <option key={department} value={department}>
+                      {department} only
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-ink-400">
+                  A question limited to one department is left out of every other
+                  department&apos;s form and report, rather than showing there
+                  with no answers.
+                </p>
               </div>
             </>
           ) : null}

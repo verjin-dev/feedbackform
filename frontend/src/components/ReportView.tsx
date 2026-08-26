@@ -345,7 +345,14 @@ export function AssignmentSection({ report }: { report: AssignmentReport }) {
                 <tbody>
                   {criterion.questions.map((question) => (
                     <tr key={question.question_id} className="border-t border-ink-100">
-                      <td className="py-2 pr-4 text-ink-700">{question.text}</td>
+                      <td className="py-2 pr-4 text-ink-700">
+                        {question.text}
+                        {question.curriculum ? (
+                          <span className="ml-2 whitespace-nowrap text-xs text-ink-400">
+                            asked only in {question.curriculum}
+                          </span>
+                        ) : null}
+                      </td>
                       <td className="py-2 pr-4">
                         <Distribution question={question} />
                       </td>

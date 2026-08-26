@@ -90,6 +90,10 @@ export interface QuestionInput {
   term_id: number;
   criterion_id: number;
   text: string;
+
+  // Sent explicitly as null to move a department question back into the core;
+  // omitted on a patch, the scope is left alone.
+  curriculum?: string | null;
 }
 export interface AccountInput {
   role: Role;
@@ -124,6 +128,26 @@ export const questions = resource<Question, QuestionInput, Partial<QuestionInput
   '/questions',
 );
 export const accounts = resource<Account, AccountInput, AccountPatch>('/accounts');
+
+/** The departments a question can be scoped to, taken from the class groups so
+ *  the two spellings cannot drift apart. */
+export function useDepartments() {
+  return useQuery({
+    queryKey: ['questions', 'departments'],
+    queryFn: () => api.get<string[]>('/questions/departments'),
+  });
+}
+
+/** Carry a term's questionnaire forward rather than retyping it. Refused if the
+ *  target already has questions, so it cannot silently duplicate or discard. */
+export function useCopyQuestionnaire() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { source_term_id: number; target_term_id: number }) =>
+      api.post<Question[]>('/questions/copy', body),
+    onSuccess: () => client.invalidateQueries({ queryKey: ['questions'] }),
+  });
+}
 
 // --- Operations that are not plain CRUD -----------------------------------
 

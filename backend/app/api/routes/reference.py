@@ -14,6 +14,7 @@ from app.api import crud
 from app.api.deps import require_admin
 from app.core.database import get_session
 from app.models import AcademicTerm, ClassGroup, Criterion, Question, Subject, TermStatus
+from app.services.reporting import normalise_curriculum
 from app.models.base import Base
 from app.services import pulse as pulse_service
 from app.schemas.reference import (
@@ -27,6 +28,7 @@ from app.schemas.reference import (
     CriterionOut,
     CriterionUpdate,
     QuestionCreate,
+    QuestionnaireCopyRequest,
     QuestionOut,
     QuestionUpdate,
     ReorderRequest,
@@ -287,6 +289,114 @@ def reorder_criteria(payload: ReorderRequest, db: Session = Depends(get_session)
 questions = APIRouter(prefix="/questions")
 
 
+def _resolve_scope(db: Session, curriculum: str | None) -> str | None:
+    """Reject a department nobody is enrolled in.
+
+    A question scoped to a curriculum that no class group carries is asked of
+    nobody. It looks correct on the questionnaire screen and is simply absent
+    from every report, which is the kind of mistake that is noticed at the end
+    of the term or not at all. A typed department name is almost always a typo.
+    """
+    if curriculum is None or not curriculum.strip():
+        return None
+
+    wanted = normalise_curriculum(curriculum)
+    known = {
+        normalise_curriculum(value): value
+        for value in db.scalars(select(ClassGroup.curriculum)).unique().all()
+    }
+    if wanted not in known:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=(
+                f"No class group belongs to '{curriculum.strip()}', so nobody "
+                "would be asked this question. Check the spelling against the "
+                "departments list."
+            ),
+        )
+    # Stored under the spelling the class groups already use, so the
+    # questionnaire screen groups the block under one heading.
+    return known[wanted]
+
+
+@questions.get("/departments", response_model=list[str])
+def list_departments(db: Session = Depends(get_session)):
+    """The departments a question can be scoped to: whatever the class groups
+    say, so the two cannot drift apart."""
+    values = db.scalars(select(ClassGroup.curriculum)).unique().all()
+    seen: dict[str | None, str] = {}
+    for value in values:
+        key = normalise_curriculum(value)
+        if key is not None and key not in seen:
+            seen[key] = value
+    return sorted(seen.values())
+
+
+@questions.post("/copy", response_model=list[QuestionOut])
+def copy_questionnaire(
+    payload: QuestionnaireCopyRequest, db: Session = Depends(get_session)
+):
+    """Carry a term's questionnaire forward, department blocks included.
+
+    Retyping it each term is why the wording drifted, and wording that changes
+    without anyone deciding to change it makes the term-on-term trend a
+    comparison of two different questions.
+    """
+    if payload.source_term_id == payload.target_term_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Choose a different term to copy into.",
+        )
+
+    crud.get_or_404(db, AcademicTerm, payload.source_term_id)
+    crud.get_or_404(db, AcademicTerm, payload.target_term_id)
+
+    existing = db.scalar(
+        select(func.count())
+        .select_from(Question)
+        .where(Question.term_id == payload.target_term_id)
+    )
+    if existing:
+        # Merging into a questionnaire that already exists would duplicate
+        # questions students then answer twice. Emptying it for them would
+        # discard work without being asked to.
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                "That term already has a questionnaire. Delete its questions "
+                "first if you mean to replace it."
+            ),
+        )
+
+    source = db.scalars(
+        select(Question)
+        .where(Question.term_id == payload.source_term_id)
+        .order_by(Question.position, Question.id)
+    ).unique().all()
+
+    if not source:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="That term has no questionnaire to copy.",
+        )
+
+    copies = [
+        Question(
+            term_id=payload.target_term_id,
+            criterion_id=question.criterion_id,
+            text=question.text,
+            position=question.position,
+            curriculum=question.curriculum,
+        )
+        for question in source
+    ]
+    db.add_all(copies)
+    db.commit()
+    for question in copies:
+        db.refresh(question)
+    return copies
+
+
 @questions.get("", response_model=list[QuestionOut])
 def list_questions(term_id: int | None = None, db: Session = Depends(get_session)):
     statement = select(Question).order_by(
@@ -308,10 +418,12 @@ def create_question(payload: QuestionCreate, db: Session = Depends(get_session))
         )
         or 0
     ) + 1
+    data = payload.model_dump()
+    data["curriculum"] = _resolve_scope(db, data.get("curriculum"))
     return crud.create(
         db,
         Question,
-        {**payload.model_dump(), "position": next_position},
+        {**data, "position": next_position},
         "That question could not be saved.",
     )
 
@@ -324,6 +436,10 @@ def update_question(
     data = payload.model_dump(exclude_unset=True)
     if "criterion_id" in data:
         crud.get_or_404(db, Criterion, data["criterion_id"])
+    if "curriculum" in data:
+        # Sent explicitly as null, this moves a department question into the
+        # core; exclude_unset above keeps an omitted field unchanged.
+        data["curriculum"] = _resolve_scope(db, data["curriculum"])
     return crud.update(db, question, data, "That question could not be saved.")
 
 

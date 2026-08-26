@@ -105,10 +105,18 @@ class QuestionCreate(BaseModel):
     criterion_id: int
     text: str = Field(min_length=1)
 
+    # Omitted or null asks it of the whole college. A curriculum asks it only
+    # of that department.
+    curriculum: str | None = Field(default=None, max_length=100)
+
 
 class QuestionUpdate(BaseModel):
     criterion_id: int | None = None
     text: str | None = Field(default=None, min_length=1)
+
+    # Present-and-null moves a department question back into the core, so the
+    # route reads model_fields_set rather than treating null as "unchanged".
+    curriculum: str | None = Field(default=None, max_length=100)
 
 
 class QuestionOut(ORMModel):
@@ -117,6 +125,19 @@ class QuestionOut(ORMModel):
     criterion_id: int
     text: str
     position: int
+    curriculum: str | None = None
+
+
+class QuestionnaireCopyRequest(BaseModel):
+    """Carry a term's questionnaire forward instead of retyping it.
+
+    Retyping was the practical reason questionnaires drifted between terms, and
+    a questionnaire that changed wording without anyone deciding to change it
+    makes the term-on-term trend meaningless.
+    """
+
+    source_term_id: int
+    target_term_id: int
 
 
 # --- Ordering --------------------------------------------------------------

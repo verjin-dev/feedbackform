@@ -54,6 +54,10 @@ export interface Question {
   criterion_id: number;
   text: string;
   position: number;
+
+  // null asks it of the whole college; a curriculum asks it only of that
+  // department.
+  curriculum: string | null;
 }
 
 export interface TeachingAssignment {
@@ -128,6 +132,11 @@ export type Reliability = 'insufficient' | 'low' | 'adequate';
 export interface QuestionReport {
   question_id: number;
   text: string;
+
+  // null where the whole college answered it; a curriculum where only that
+  // department did. Shown, because a department block and the shared core are
+  // not the same population.
+  curriculum: string | null;
   counts: Record<string, number>;
   percentages: Record<string, number>;
   responses: number;

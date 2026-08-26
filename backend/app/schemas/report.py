@@ -7,6 +7,12 @@ class QuestionReport(BaseModel):
     question_id: int
     text: str
 
+    # None where the whole college answered it; a curriculum where only that
+    # department did. A department block and the shared core are not the same
+    # population, and a reader comparing two faculty needs to see which is
+    # which before reading anything into the difference.
+    curriculum: str | None = None
+
     # Keyed "1".."5". Always all five keys, including zeros.
     counts: dict[str, int]
     percentages: dict[str, float]

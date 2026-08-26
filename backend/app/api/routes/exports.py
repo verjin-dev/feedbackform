@@ -57,9 +57,14 @@ def summary(
 
 
 @router.get("/questionnaire.csv", response_class=Response)
-def questionnaire_csv(term_id: int | None = None, db: Session = Depends(get_session)):
+def questionnaire_csv(
+    term_id: int | None = None,
+    curriculum: str | None = None,
+    db: Session = Depends(get_session),
+):
     term = _resolve_term(db, term_id)
-    return _csv(exporting.questionnaire_csv(db, term), term, "questionnaire", None)
+    body = exporting.questionnaire_csv(db, term, curriculum)
+    return _csv(body, term, "questionnaire", curriculum)
 
 
 @router.get("/participation.csv", response_class=Response)
