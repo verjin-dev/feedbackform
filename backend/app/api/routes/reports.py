@@ -7,6 +7,7 @@ from app.api.deps import require_admin, require_staff
 from app.core.database import get_session
 from app.models import AcademicTerm, Account, Role
 from app.schemas.report import FacultyReport, FacultyTrend, ResponseRateReport
+from app.services import cohort as cohort_service
 from app.services import comments as comment_service
 from app.services import trends as trend_service
 from app.services.reporting import build_faculty_report, build_response_rate_report
@@ -30,6 +31,14 @@ def _attach_comments(db: Session, report: dict, term: AcademicTerm, viewer: Acco
         assignment["comments"] = entry.comments if entry else []
         assignment["comment_state"] = entry.state if entry else comment_service.RELEASED
         assignment["comment_total"] = entry.total if entry else 0
+    return report
+
+
+def _attach_cohort(db: Session, report: dict, term: AcademicTerm) -> dict:
+    """Context for each score, added after the numbers themselves."""
+    bands = cohort_service.bands_for(db, term, report["assignments"])
+    for assignment in report["assignments"]:
+        assignment["cohort"] = bands.get(assignment["assignment_id"])
     return report
 
 
@@ -59,7 +68,8 @@ def my_report(
             detail="Only faculty accounts have a personal report.",
         )
     term = _resolve_term(db, term_id)
-    return _attach_comments(db, build_faculty_report(db, account, term), term, account)
+    report = _attach_cohort(db, build_faculty_report(db, account, term), term)
+    return _attach_comments(db, report, term, account)
 
 
 @router.get("/faculty/{faculty_id}", response_model=FacultyReport)
@@ -88,7 +98,8 @@ def faculty_report(
         )
 
     term = _resolve_term(db, term_id)
-    return _attach_comments(db, build_faculty_report(db, faculty, term), term, account)
+    report = _attach_cohort(db, build_faculty_report(db, faculty, term), term)
+    return _attach_comments(db, report, term, account)
 
 
 @router.get(

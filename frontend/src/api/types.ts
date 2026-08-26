@@ -103,6 +103,19 @@ export interface Comment {
  *  say whether nobody wrote anything or the rules are holding it back. */
 export type CommentState = 'released' | 'window_open' | 'too_few_responses';
 
+/** The middle half of what comparable subjects scored.
+ *
+ *  Carries no names, no ids, no position and no percentile — a percentile is a
+ *  ranking with one row visible, and a ranking gets used for decisions this
+ *  data cannot support. */
+export interface CohortBand {
+  size: number;
+  p25: number;
+  median: number;
+  p75: number;
+  basis: string;
+}
+
 /** How much weight the figures on a row can carry.
  *  - insufficient: too few responses for a mean to be published at all
  *  - low:          a real mean, but from a small share of the class
@@ -143,6 +156,7 @@ export interface AssignmentReport {
   reliability: Reliability;
   criteria: CriterionReport[];
   mean: number | null;
+  cohort: CohortBand | null;
   comments: Comment[];
   comment_state: CommentState;
   comment_total: number;

@@ -45,6 +45,20 @@ class CommentOut(BaseModel):
     withheld_reason: str | None = None
 
 
+class CohortBand(BaseModel):
+    """The middle half of what comparable subjects scored.
+
+    Deliberately carries no names, no ids, no position and no percentile — a
+    percentile is a ranking with one row visible.
+    """
+
+    size: int
+    p25: float
+    median: float
+    p75: float
+    basis: str
+
+
 class AssignmentReport(BaseModel):
     assignment_id: int
     subject_id: int
@@ -60,6 +74,10 @@ class AssignmentReport(BaseModel):
 
     criteria: list[CriterionReport]
     mean: float | None
+
+    # None where there is no honest comparison to draw: too few comparable
+    # subjects, or too few of them with a published mean.
+    cohort: CohortBand | None = None
 
     comments: list[CommentOut] = []
     # "released" | "window_open" | "too_few_responses" — why prose is or is not

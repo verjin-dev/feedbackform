@@ -1,5 +1,6 @@
 import type {
   AssignmentReport,
+  CohortBand,
   CommentState,
   FacultyReport,
   QuestionReport,
@@ -124,6 +125,85 @@ function Distribution({ question }: { question: QuestionReport }) {
   );
 }
 
+/**
+ * A score against the middle half of what comparable subjects scored.
+ *
+ * A band, deliberately, and not a position. The question worth answering is
+ * "is 4.2 good?"; the question this must never answer is "who is worst?".
+ * Nobody else is named, and no percentile is shown — a percentile is a ranking
+ * with one row visible.
+ */
+function CohortContext({
+  band,
+  mean,
+}: {
+  band: CohortBand | null;
+  mean: number | null;
+}) {
+  if (band === null || mean === null) return null;
+
+  // Fixed to the rating scale, like the sparklines, so a narrow band looks
+  // narrow rather than being stretched to fill the bar.
+  const MIN = 1;
+  const MAX = 5;
+  const place = (value: number) => ((value - MIN) / (MAX - MIN)) * 100;
+
+  const left = place(band.p25);
+  const width = Math.max(place(band.p75) - left, 0.6);
+  const marker = place(mean);
+
+  const where =
+    mean > band.p75
+      ? 'above the middle half'
+      : mean < band.p25
+        ? 'below the middle half'
+        : 'within the middle half';
+
+  return (
+    <div className="mt-3">
+      <div className="mb-1 flex flex-wrap items-baseline justify-between gap-2">
+        <span className="text-xs uppercase text-ink-500">In context</span>
+        <span className="text-xs text-ink-500">{band.basis}</span>
+      </div>
+
+      <div
+        className="relative h-6 w-full rounded-md bg-ink-50"
+        role="img"
+        aria-label={`This subject scored ${mean.toFixed(2)}, ${where} of comparable subjects, which ran from ${band.p25.toFixed(2)} to ${band.p75.toFixed(2)} with a middle value of ${band.median.toFixed(2)}. Based on ${band.basis}.`}
+      >
+        {/* The middle half. */}
+        <div
+          className="absolute inset-y-1 rounded-sm bg-accent-100"
+          style={{ left: `${left}%`, width: `${width}%` }}
+        />
+        {/* The middle value of the cohort. */}
+        <div
+          className="absolute inset-y-1 w-px bg-accent-300"
+          style={{ left: `${place(band.median)}%` }}
+        />
+        {/* This subject. */}
+        <div
+          className="absolute inset-y-0 w-0.5 rounded-full bg-accent-600"
+          style={{ left: `${marker}%` }}
+        />
+      </div>
+
+      <div className="mt-1 flex justify-between text-[11px] tabular-nums text-ink-400">
+        <span>1</span>
+        <span>
+          middle half {band.p25.toFixed(1)}–{band.p75.toFixed(1)}
+        </span>
+        <span>5</span>
+      </div>
+
+      <p className="mt-1.5 text-xs text-ink-500">
+        This subject is {where} of comparable subjects. The band is there to
+        answer whether a score is unusual, not to place anyone in an order.
+      </p>
+    </div>
+  );
+}
+
 const PROMPT_HEADING: Record<string, string> = {
   helped: 'What helped',
   change: 'What to change',
@@ -235,6 +315,8 @@ export function AssignmentSection({ report }: { report: AssignmentReport }) {
             </dd>
           </div>
         </dl>
+
+        <CohortContext band={report.cohort} mean={report.mean} />
       </div>
 
       <div className="flex flex-col gap-5">

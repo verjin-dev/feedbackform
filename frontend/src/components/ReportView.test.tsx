@@ -32,6 +32,7 @@ function assignment(overrides: Partial<AssignmentReport> = {}): AssignmentReport
     reliability: 'insufficient',
     mean: null,
     criteria: [{ criterion_id: 1, name: 'Subject knowledge', questions: [question()], mean: null }],
+    cohort: null,
     comments: [],
     comment_state: 'released',
     comment_total: 0,
@@ -121,5 +122,74 @@ describe('AssignmentSection', () => {
 
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(screen.getByText('4.20')).toBeInTheDocument();
+  });
+});
+
+describe('cohort context', () => {
+  const band = {
+    size: 11,
+    p25: 3.8,
+    median: 4.1,
+    p75: 4.5,
+    basis: '11 other subjects in B.E. CSE, 2025-2026 semester 1',
+  };
+
+  it('shows nothing when there is no honest comparison', () => {
+    render(<AssignmentSection report={assignment({ responses: 20, mean: 4.2 })} />);
+
+    expect(screen.queryByText(/In context/i)).not.toBeInTheDocument();
+  });
+
+  it('describes the band as a range rather than a position', () => {
+    render(
+      <AssignmentSection
+        report={assignment({ responses: 20, mean: 4.2, reliability: 'adequate', cohort: band })}
+      />,
+    );
+
+    expect(screen.getByText(/middle half 3\.8–4\.5/)).toBeInTheDocument();
+    expect(screen.getByText(band.basis)).toBeInTheDocument();
+  });
+
+  it('never renders a rank or a percentile', () => {
+    const { container } = render(
+      <AssignmentSection
+        report={assignment({ responses: 20, mean: 4.2, reliability: 'adequate', cohort: band })}
+      />,
+    );
+
+    const text = container.textContent?.toLowerCase() ?? '';
+    expect(text).not.toContain('percentile');
+    expect(text).not.toContain('rank');
+    expect(text).not.toMatch(/\d+(st|nd|rd|th) of \d+/);
+  });
+
+  it('says where the score sits without ordering anyone', () => {
+    render(
+      <AssignmentSection
+        report={assignment({ responses: 20, mean: 4.8, reliability: 'adequate', cohort: band })}
+      />,
+    );
+
+    expect(screen.getByText(/above the middle half/)).toBeInTheDocument();
+  });
+
+  it('describes the whole comparison for a screen reader', () => {
+    render(
+      <AssignmentSection
+        report={assignment({ responses: 20, mean: 3.2, reliability: 'adequate', cohort: band })}
+      />,
+    );
+
+    const chart = screen.getAllByRole('img').at(-1) as HTMLElement;
+    expect(chart).toHaveAccessibleName(/scored 3\.20/);
+    expect(chart).toHaveAccessibleName(/below the middle half/);
+  });
+
+  it('is hidden when this subject has no publishable mean of its own', () => {
+    // Comparing a withheld figure against a band would put it back on screen.
+    render(<AssignmentSection report={assignment({ responses: 3, mean: null, cohort: band })} />);
+
+    expect(screen.queryByText(/middle half/)).not.toBeInTheDocument();
   });
 });
