@@ -15,6 +15,7 @@ import {
   StudentsPage,
 } from '@/routes/admin/AccountsPage';
 import { AssignmentsPage } from '@/routes/admin/AssignmentsPage';
+import { ExportsPage } from '@/routes/admin/ExportsPage';
 import { ImportPage } from '@/routes/admin/ImportPage';
 import { OverviewPage } from '@/routes/admin/OverviewPage';
 import { ParticipationPage } from '@/routes/admin/ParticipationPage';
@@ -65,6 +66,7 @@ export function App() {
           <Route path="/admin/import" element={<ImportPage />} />
           <Route path="/admin/participation" element={<ParticipationPage />} />
           <Route path="/admin/reports" element={<ReportsPage />} />
+          <Route path="/admin/exports" element={<ExportsPage />} />
         </Route>
       </Route>
 

@@ -78,3 +78,47 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Print.
+ *
+ * An accreditation file is paper. What prints should be the report, not a
+ * screenshot of a web page with a navigation sidebar down the side of it.
+ */
+@media print {
+  /* The app shell is chrome; on paper it is noise. */
+  header,
+  nav,
+  button {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+    font-size: 11pt;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* Tables that break across a page must repeat their heading, or the second
+   * page is a wall of unlabelled numbers. */
+  thead {
+    display: table-header-group;
+  }
+
+  tr,
+  section,
+  article {
+    break-inside: avoid;
+  }
+
+  a[href]::after {
+    content: '';
+  }
+
+  @page {
+    margin: 18mm 15mm;
+  }
+}

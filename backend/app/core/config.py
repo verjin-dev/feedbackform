@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     # must be the address a recipient can actually open — not the API's.
     app_base_url: str = "http://localhost:5173"
 
+    # Printed on accreditation exports. There is no institution entity in
+    # the schema — the legacy system_settings table was not migrated — so
+    # this is configuration rather than data.
+    institution_name: str = "Your Institution"
+
     # "console" prints to the log and sends nothing, which is the right default:
     # a misconfigured deployment should fail to deliver visibly rather than mail
     # real students by accident. "memory" is for tests. "smtp" actually sends.

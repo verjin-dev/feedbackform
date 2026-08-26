@@ -213,15 +213,32 @@ def _build_question_report(question: Question, counts: dict[int, int]) -> dict:
     }
 
 
-def build_faculty_report(db: Session, faculty: Account, term: AcademicTerm) -> dict:
-    assignments = db.scalars(
-        select(TeachingAssignment)
-        .where(
-            TeachingAssignment.term_id == term.id,
-            TeachingAssignment.faculty_id == faculty.id,
-        )
-        .order_by(TeachingAssignment.id)
-    ).unique().all()
+def assignment_reports(
+    db: Session,
+    term: AcademicTerm,
+    *,
+    faculty_id: int | None = None,
+    curriculum: str | None = None,
+) -> list[dict]:
+    """Every assignment in the term, aggregated once.
+
+    The faculty report, the admin report and the accreditation export all read
+    this. Two implementations of the same arithmetic would eventually disagree,
+    and a document submitted to an accreditor that does not match the screen it
+    was checked against is the worst version of that problem.
+    """
+    statement = select(TeachingAssignment).where(TeachingAssignment.term_id == term.id)
+    if faculty_id is not None:
+        statement = statement.where(TeachingAssignment.faculty_id == faculty_id)
+    assignments = db.scalars(statement.order_by(TeachingAssignment.id)).unique().all()
+
+    if curriculum is not None:
+        # There is no department entity in the schema; curriculum on the class
+        # is the closest thing to one, so that is what this filters on.
+        wanted = curriculum.strip().lower()
+        assignments = [
+            a for a in assignments if a.class_group.curriculum.strip().lower() == wanted
+        ]
 
     assignment_ids = {a.id for a in assignments}
     class_ids = {a.class_group_id for a in assignments}
@@ -231,7 +248,7 @@ def build_faculty_report(db: Session, faculty: Account, term: AcademicTerm) -> d
     tally = _rating_counts(db, assignment_ids)
     questionnaire = term_questionnaire(db, term.id)
 
-    assignment_reports = []
+    reports = []
     for assignment in assignments:
         per_question = tally.get(assignment.id, {})
 
@@ -257,21 +274,23 @@ def build_faculty_report(db: Session, faculty: Account, term: AcademicTerm) -> d
         answered = responses.get(assignment.id, 0)
         eligible_here = eligible.get(assignment.class_group_id, 0)
         rate = _safe_ratio(answered, eligible_here)
-        reliability = _reliability(answered, rate)
         publishable = answered >= MIN_RESPONSES_FOR_MEAN
 
-        assignment_reports.append(
+        reports.append(
             {
                 "assignment_id": assignment.id,
+                "faculty_id": assignment.faculty_id,
+                "faculty_name": assignment.faculty.full_name,
                 "subject_id": assignment.subject_id,
                 "subject_code": assignment.subject.code,
                 "subject_name": assignment.subject.name,
                 "class_group_id": assignment.class_group_id,
                 "class_label": assignment.class_group.label,
+                "curriculum": assignment.class_group.curriculum,
                 "eligible_students": eligible_here,
                 "responses": answered,
                 "response_rate": rate,
-                "reliability": reliability,
+                "reliability": _reliability(answered, rate),
                 "criteria": criteria_reports,
                 "mean": (
                     _mean_of([c["mean"] for c in criteria_reports if c["mean"] is not None])
@@ -280,15 +299,17 @@ def build_faculty_report(db: Session, faculty: Account, term: AcademicTerm) -> d
                 ),
             }
         )
+    return reports
 
+
+def build_faculty_report(db: Session, faculty: Account, term: AcademicTerm) -> dict:
+    reports = assignment_reports(db, term, faculty_id=faculty.id)
     return {
         "faculty_id": faculty.id,
         "faculty_name": faculty.full_name,
         "term": term,
-        "assignments": assignment_reports,
-        "mean": _mean_of(
-            [a["mean"] for a in assignment_reports if a["mean"] is not None]
-        ),
+        "assignments": reports,
+        "mean": _mean_of([a["mean"] for a in reports if a["mean"] is not None]),
     }
 
 
