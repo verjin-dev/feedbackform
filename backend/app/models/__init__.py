@@ -3,7 +3,8 @@ from app.models.account import Account
 from app.models.assignment import TeachingAssignment
 from app.models.base import Base
 from app.models.catalog import ClassGroup, Subject
-from app.models.enums import Role, TermStatus
+from app.models.comment import EvaluationComment
+from app.models.enums import CommentPrompt, Role, TermStatus
 from app.models.evaluation import (
     EvaluationRating,
     EvaluationResponse,
@@ -17,7 +18,9 @@ __all__ = [
     "Account",
     "Base",
     "ClassGroup",
+    "CommentPrompt",
     "Criterion",
+    "EvaluationComment",
     "EvaluationRating",
     "EvaluationResponse",
     "EvaluationSubmission",

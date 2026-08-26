@@ -7,9 +7,29 @@ from app.api.deps import require_admin, require_staff
 from app.core.database import get_session
 from app.models import AcademicTerm, Account, Role
 from app.schemas.report import FacultyReport, ResponseRateReport
+from app.services import comments as comment_service
 from app.services.reporting import build_faculty_report, build_response_rate_report
 
 router = APIRouter(prefix="/reports", tags=["reports"])
+
+
+def _attach_comments(db: Session, report: dict, term: AcademicTerm, viewer: Account) -> dict:
+    """Written feedback is added last and separately, because who may read it
+    is a different question from who may read the numbers."""
+    assignments = report["assignments"]
+    release = comment_service.comments_for_assignments(
+        db,
+        term,
+        {a["assignment_id"] for a in assignments},
+        {a["assignment_id"]: a["responses"] for a in assignments},
+        viewer=viewer,
+    )
+    for assignment in assignments:
+        entry = release.get(assignment["assignment_id"])
+        assignment["comments"] = entry.comments if entry else []
+        assignment["comment_state"] = entry.state if entry else comment_service.RELEASED
+        assignment["comment_total"] = entry.total if entry else 0
+    return report
 
 
 def _resolve_term(db: Session, term_id: int | None) -> AcademicTerm:
@@ -37,7 +57,8 @@ def my_report(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Only faculty accounts have a personal report.",
         )
-    return build_faculty_report(db, account, _resolve_term(db, term_id))
+    term = _resolve_term(db, term_id)
+    return _attach_comments(db, build_faculty_report(db, account, term), term, account)
 
 
 @router.get("/faculty/{faculty_id}", response_model=FacultyReport)
@@ -65,7 +86,8 @@ def faculty_report(
             status_code=status.HTTP_404_NOT_FOUND, detail="Account not found"
         )
 
-    return build_faculty_report(db, faculty, _resolve_term(db, term_id))
+    term = _resolve_term(db, term_id)
+    return _attach_comments(db, build_faculty_report(db, faculty, term), term, account)
 
 
 @router.get(

@@ -35,6 +35,16 @@ class CriterionReport(BaseModel):
     mean: float | None
 
 
+class CommentOut(BaseModel):
+    id: int
+    prompt: str
+    text: str
+    withheld: bool = False
+    # Only ever populated for an administrator; a faculty member is not told
+    # that something about them was taken down, or why.
+    withheld_reason: str | None = None
+
+
 class AssignmentReport(BaseModel):
     assignment_id: int
     subject_id: int
@@ -50,6 +60,12 @@ class AssignmentReport(BaseModel):
 
     criteria: list[CriterionReport]
     mean: float | None
+
+    comments: list[CommentOut] = []
+    # "released" | "window_open" | "too_few_responses" — why prose is or is not
+    # being shown, so the page can say which rather than showing an empty list.
+    comment_state: str = "released"
+    comment_total: int = 0
 
 
 class FacultyReport(BaseModel):

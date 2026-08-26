@@ -1,5 +1,6 @@
 import type {
   AssignmentReport,
+  CommentState,
   FacultyReport,
   QuestionReport,
   Reliability,
@@ -123,6 +124,87 @@ function Distribution({ question }: { question: QuestionReport }) {
   );
 }
 
+const PROMPT_HEADING: Record<string, string> = {
+  helped: 'What helped',
+  change: 'What to change',
+};
+
+/**
+ * Written feedback, or why there is none to show.
+ *
+ * An empty list has three different meanings — nobody wrote anything, the
+ * window is still open, or too few people responded — and a blank space says
+ * none of them.
+ */
+function Comments({
+  comments,
+  state,
+}: {
+  comments: AssignmentReport['comments'];
+  state: CommentState;
+}) {
+  if (state === 'window_open') {
+    return (
+      <p className="text-sm text-ink-500">
+        Written feedback appears here once the feedback period closes. It is held
+        back until then so that nobody is reading criticism while marks are still
+        being decided.
+      </p>
+    );
+  }
+
+  if (state === 'too_few_responses') {
+    return (
+      <p className="text-sm text-ink-500">
+        Too few students responded for written feedback to be shown. With only a
+        handful of replies, who wrote what is often guessable, so none of it is
+        released.
+      </p>
+    );
+  }
+
+  if (comments.length === 0) {
+    return <p className="text-sm text-ink-400">Nobody wrote anything this time.</p>;
+  }
+
+  const grouped = comments.reduce<Record<string, typeof comments>>((acc, comment) => {
+    (acc[comment.prompt] ??= []).push(comment);
+    return acc;
+  }, {});
+
+  return (
+    <div className="flex flex-col gap-4">
+      {Object.entries(grouped).map(([prompt, entries]) => (
+        <div key={prompt}>
+          <h4 className="mb-1.5 text-xs uppercase tracking-wide text-ink-500">
+            {PROMPT_HEADING[prompt] ?? prompt}
+          </h4>
+          <ul className="flex flex-col gap-2">
+            {entries.map((comment) => (
+              <li
+                key={comment.id}
+                className={
+                  comment.withheld
+                    ? 'rounded-md border border-critical-600 bg-critical-100/40 p-3 text-sm text-ink-700'
+                    : 'rounded-md bg-ink-50 p-3 text-sm text-ink-700'
+                }
+              >
+                {comment.withheld ? (
+                  <span className="mb-1 block text-xs font-medium text-critical-600">
+                    Withheld from the instructor
+                    {comment.withheld_reason ? ` — ${comment.withheld_reason}` : ''}
+                  </span>
+                ) : null}
+                {comment.text}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function AssignmentSection({ report }: { report: AssignmentReport }) {
   return (
     <Card title={`${report.subject_code} — ${report.subject_name} · ${report.class_label}`}>
@@ -200,6 +282,13 @@ export function AssignmentSection({ report }: { report: AssignmentReport }) {
           </section>
         ))}
       </div>
+
+      <section className="mt-6 border-t border-ink-100 pt-4">
+        <h3 className="mb-2 text-sm font-semibold text-ink-800">
+          In students' own words
+        </h3>
+        <Comments comments={report.comments} state={report.comment_state} />
+      </section>
     </Card>
   );
 }

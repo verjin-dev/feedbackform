@@ -32,6 +32,9 @@ function assignment(overrides: Partial<AssignmentReport> = {}): AssignmentReport
     reliability: 'insufficient',
     mean: null,
     criteria: [{ criterion_id: 1, name: 'Subject knowledge', questions: [question()], mean: null }],
+    comments: [],
+    comment_state: 'released',
+    comment_total: 0,
     ...overrides,
   };
 }

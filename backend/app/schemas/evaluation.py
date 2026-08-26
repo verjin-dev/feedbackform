@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.models.enums import TermStatus
+from app.models.enums import CommentPrompt, TermStatus
 
 
 class TermBrief(BaseModel):
@@ -34,14 +34,25 @@ class CriterionBlock(BaseModel):
     questions: list[QuestionBrief]
 
 
+class CommentPromptOut(BaseModel):
+    prompt: CommentPrompt
+    text: str
+
+
 class QuestionnaireOut(BaseModel):
     term: TermBrief
     criteria: list[CriterionBlock]
+    comment_prompts: list[CommentPromptOut] = Field(default_factory=list)
 
 
 class RatingIn(BaseModel):
     question_id: int
     rating: int = Field(ge=1, le=5)
+
+
+class CommentIn(BaseModel):
+    prompt: CommentPrompt
+    text: str = Field(max_length=1500)
 
 
 class EvaluationSubmitRequest(BaseModel):
@@ -55,6 +66,11 @@ class EvaluationSubmitRequest(BaseModel):
 
     assignment_id: int
     ratings: list[RatingIn] = Field(min_length=1)
+
+    # Optional. Written feedback is the most useful thing a student can give
+    # and the most effort to give, so it is never required — a form that
+    # refuses to submit without prose collects worse ratings, not better prose.
+    comments: list[CommentIn] = Field(default_factory=list, max_length=2)
 
     @model_validator(mode="after")
     def one_answer_per_question(self) -> "EvaluationSubmitRequest":
@@ -74,3 +90,4 @@ class SubmissionReceipt(BaseModel):
 
     assignment_id: int
     answers_recorded: int
+    comments_recorded: int = 0

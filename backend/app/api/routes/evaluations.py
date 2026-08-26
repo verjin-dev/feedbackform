@@ -16,6 +16,7 @@ from app.models import (
     TermStatus,
 )
 from app.schemas.evaluation import (
+    CommentPromptOut,
     CriterionBlock,
     EvaluationSubmitRequest,
     PendingAssignmentOut,
@@ -23,6 +24,7 @@ from app.schemas.evaluation import (
     SubmissionReceipt,
     TermBrief,
 )
+from app.services import comments as comment_service
 from app.services.reporting import term_questionnaire
 
 router = APIRouter(tags=["evaluation"], dependencies=[Depends(require_student)])
@@ -95,6 +97,10 @@ def questionnaire(
                 questions=[{"id": q.id, "text": q.text} for q in questions],
             )
             for criterion, questions in term_questionnaire(db, term.id)
+        ],
+        comment_prompts=[
+            CommentPromptOut(prompt=prompt, text=text)
+            for prompt, text in comment_service.PROMPT_TEXT.items()
         ],
     )
 
@@ -174,6 +180,15 @@ def submit_evaluation(
                     rating=rating.rating,
                 )
             )
+
+        # Same transaction as the ratings: a submission is one act, and a
+        # comment stored without its ratings would be an orphan nobody could
+        # interpret.
+        written_comments = comment_service.save_comments(
+            db,
+            response,
+            [(entry.prompt, entry.text) for entry in payload.comments],
+        )
         db.commit()
     except IntegrityError:
         db.rollback()
@@ -185,5 +200,7 @@ def submit_evaluation(
         ) from None
 
     return SubmissionReceipt(
-        assignment_id=assignment.id, answers_recorded=len(payload.ratings)
+        assignment_id=assignment.id,
+        answers_recorded=len(payload.ratings),
+        comments_recorded=written_comments,
     )

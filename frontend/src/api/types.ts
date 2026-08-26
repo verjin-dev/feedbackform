@@ -83,10 +83,25 @@ export interface QuestionnaireBlock {
   questions: { id: number; text: string }[];
 }
 
+export type CommentPrompt = 'helped' | 'change';
+
 export interface Questionnaire {
   term: Pick<AcademicTerm, 'id' | 'year' | 'semester' | 'status'>;
   criteria: QuestionnaireBlock[];
+  comment_prompts: { prompt: CommentPrompt; text: string }[];
 }
+
+export interface Comment {
+  id: number;
+  prompt: CommentPrompt;
+  text: string;
+  withheld?: boolean;
+  withheld_reason?: string | null;
+}
+
+/** Why written feedback is or is not being shown. An empty list alone cannot
+ *  say whether nobody wrote anything or the rules are holding it back. */
+export type CommentState = 'released' | 'window_open' | 'too_few_responses';
 
 /** How much weight the figures on a row can carry.
  *  - insufficient: too few responses for a mean to be published at all
@@ -128,6 +143,9 @@ export interface AssignmentReport {
   reliability: Reliability;
   criteria: CriterionReport[];
   mean: number | null;
+  comments: Comment[];
+  comment_state: CommentState;
+  comment_total: number;
 }
 
 export interface FacultyReport {

@@ -26,6 +26,10 @@ const QUESTIONNAIRE = {
       ],
     },
   ],
+  comment_prompts: [
+    { prompt: 'helped', text: 'What helped you learn in this subject?' },
+    { prompt: 'change', text: 'What would you change?' },
+  ],
 };
 
 let posted: unknown[] = [];
@@ -130,7 +134,74 @@ describe('EvaluatePage', () => {
         { question_id: 10, rating: 5 },
         { question_id: 11, rating: 3 },
       ],
+      comments: [],
     });
+  });
+
+  it('states the rules before the box, not after', async () => {
+    // The one safeguard on comments that is not enforced in code.
+    stubApi();
+    renderPage();
+
+    await screen.findByText('What would you change?');
+    expect(
+      screen.getByText(/only after the feedback period closes/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/identify you to someone who was in the room/i)).toBeInTheDocument();
+  });
+
+  it('sends written feedback alongside the ratings', async () => {
+    stubApi();
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText('Explains concepts clearly.');
+    const groups = screen.getAllByRole('group');
+    await user.click(within(groups[0] as HTMLElement).getByRole('radio', { name: /5/ }));
+    await user.click(within(groups[1] as HTMLElement).getByRole('radio', { name: /5/ }));
+    await user.type(
+      screen.getByRole('textbox', { name: /What would you change\?/ }),
+      'More worked examples.',
+    );
+    await user.click(screen.getByRole('button', { name: 'Submit feedback' }));
+
+    await waitFor(() => expect(posted).toHaveLength(1));
+    expect((posted[0] as { comments: unknown[] }).comments).toEqual([
+      { prompt: 'change', text: 'More worked examples.' },
+    ]);
+  });
+
+  it('does not send an untouched box as an empty opinion', async () => {
+    stubApi();
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText('Explains concepts clearly.');
+    const groups = screen.getAllByRole('group');
+    await user.click(within(groups[0] as HTMLElement).getByRole('radio', { name: /4/ }));
+    await user.click(within(groups[1] as HTMLElement).getByRole('radio', { name: /4/ }));
+    await user.type(
+      screen.getByRole('textbox', { name: /What would you change\?/ }),
+      '   ',
+    );
+    await user.click(screen.getByRole('button', { name: 'Submit feedback' }));
+
+    await waitFor(() => expect(posted).toHaveLength(1));
+    expect((posted[0] as { comments: unknown[] }).comments).toEqual([]);
+  });
+
+  it('never requires written feedback to submit', async () => {
+    stubApi();
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText('Explains concepts clearly.');
+    const groups = screen.getAllByRole('group');
+    await user.click(within(groups[0] as HTMLElement).getByRole('radio', { name: /3/ }));
+    await user.click(within(groups[1] as HTMLElement).getByRole('radio', { name: /3/ }));
+    await user.click(screen.getByRole('button', { name: 'Submit feedback' }));
+
+    await waitFor(() => expect(posted).toHaveLength(1));
   });
 
   it('shows the server message when a submission is rejected', async () => {
@@ -185,6 +256,7 @@ describe('EvaluatePage', () => {
     stubApi();
     renderPage();
 
-    expect(await screen.findByText(/without your name/i)).toBeInTheDocument();
+    const mentions = await screen.findAllByText(/without your name/i);
+    expect(mentions.length).toBeGreaterThan(0);
   });
 });

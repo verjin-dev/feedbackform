@@ -91,7 +91,11 @@ class TestSubmission:
         client something to correlate with later."""
         body = _submit(student_client, fixtures).json()
 
-        assert set(body) == {"assignment_id", "answers_recorded"}
+        # Asserted by absence rather than by an exact key set, so adding a
+        # field to the receipt does not fail this for the wrong reason.
+        assert "response_id" not in body
+        assert "id" not in body
+        assert not any("uuid" in str(value).lower() for value in body.values())
 
     def test_a_second_submission_is_refused(self, student_client, fixtures):
         assert _submit(student_client, fixtures).status_code == 201

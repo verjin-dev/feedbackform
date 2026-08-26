@@ -18,3 +18,16 @@ class TermStatus(str, enum.Enum):
     pending = "pending"
     open = "open"
     closed = "closed"
+
+
+class CommentPrompt(str, enum.Enum):
+    """The two open questions.
+
+    Fixed rather than configurable. Free-text prompts are easy to word badly —
+    "any other comments?" invites the least useful answers there are — and
+    these two are the pair that consistently produce something an instructor
+    can act on.
+    """
+
+    helped = "helped"  # What helped you learn?
+    change = "change"  # What would you change?

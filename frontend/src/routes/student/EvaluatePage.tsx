@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useMemo, useState } from 'react';
 
 import { ApiError, api } from '@/api/client';
-import type { PendingAssignment, Questionnaire } from '@/api/types';
+import type { CommentPrompt, PendingAssignment, Questionnaire } from '@/api/types';
 import { Alert, Button, Card, cx } from '@/components/ui';
 
 const SCALE = [
@@ -34,6 +34,7 @@ export function EvaluatePage() {
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [answers, setAnswers] = useState<Record<number, number>>({});
+  const [comments, setComments] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [justSubmitted, setJustSubmitted] = useState<string | null>(null);
   const [showMissing, setShowMissing] = useState(false);
@@ -50,7 +51,11 @@ export function EvaluatePage() {
   }, [selected, selectedId]);
 
   const submit = useMutation({
-    mutationFn: (body: { assignment_id: number; ratings: { question_id: number; rating: number }[] }) =>
+    mutationFn: (body: {
+      assignment_id: number;
+      ratings: { question_id: number; rating: number }[];
+      comments: { prompt: CommentPrompt; text: string }[];
+    }) =>
       api.post<{ assignment_id: number; answers_recorded: number }>('/evaluations', body),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['pending-assignments'] });
@@ -131,9 +136,13 @@ export function EvaluatePage() {
           question_id: question.id,
           rating: answers[question.id] as number,
         })),
+        comments: Object.entries(comments)
+          .filter(([, text]) => text.trim() !== '')
+          .map(([prompt, text]) => ({ prompt: prompt as CommentPrompt, text })),
       });
       setJustSubmitted(`${selected.subject_code} — ${selected.faculty_name}`);
       setAnswers({});
+      setComments({});
       setShowMissing(false);
       setSelectedId(null);
     } catch (cause) {
@@ -170,6 +179,7 @@ export function EvaluatePage() {
                   onClick={() => {
                     setSelectedId(entry.assignment_id);
                     setAnswers({});
+                    setComments({});
                     setShowMissing(false);
                     setError(null);
                   }}
@@ -297,6 +307,56 @@ export function EvaluatePage() {
                 </div>
               </section>
             ))}
+
+            {/* Written feedback. Optional, and last: it is the most useful
+                thing a student can give and the most effort to give, so it
+                comes after the part that is quick. */}
+            {questionnaire.data?.comment_prompts?.length ? (
+              <section className="rounded-md border border-ink-100 p-4">
+                <h3 className="text-sm font-semibold text-ink-800">
+                  Anything you want to say in your own words?
+                </h3>
+
+                {/* The fourth safeguard, and the only one that is not code:
+                    the rules are stated before anyone types, not after. */}
+                <p className="mt-1 mb-3 text-xs leading-relaxed text-ink-500">
+                  Optional. Your instructor sees these only after the feedback
+                  period closes and marks are in, and only if enough of your
+                  class responded. They are shown without your name — but
+                  describing a specific moment can still identify you to someone
+                  who was in the room, so keep it about the teaching.
+                </p>
+
+                <div className="flex flex-col gap-3">
+                  {questionnaire.data.comment_prompts?.map((entry) => {
+                    const value = comments[entry.prompt] ?? '';
+                    return (
+                      <label key={entry.prompt} className="flex flex-col gap-1.5">
+                        <span className="text-sm text-ink-700">{entry.text}</span>
+                        <textarea
+                          rows={3}
+                          maxLength={1500}
+                          value={value}
+                          onChange={(event) =>
+                            setComments((current) => ({
+                              ...current,
+                              [entry.prompt]: event.target.value,
+                            }))
+                          }
+                          className="w-full rounded-md bg-white px-3 py-2 text-sm text-ink-800 ring-1 ring-ink-200 placeholder:text-ink-400"
+                          placeholder="Leave blank if you would rather not."
+                        />
+                        {value.length > 1200 ? (
+                          <span className="text-xs text-ink-400 tabular-nums">
+                            {1500 - value.length} characters left
+                          </span>
+                        ) : null}
+                      </label>
+                    );
+                  })}
+                </div>
+              </section>
+            ) : null}
 
             {/* Full width and a comfortable target on phones, which is how
                 most students will do this. */}
