@@ -22,6 +22,9 @@ interface Group {
 
 interface QuestionDraft {
   text: string;
+  // Empty string in the form, sent as null: an empty translation and no
+  // translation mean the same thing and must not be stored differently.
+  text_ta: string;
   criterion_id: number;
   curriculum: string | null;
 }
@@ -150,10 +153,14 @@ export function QuestionnairePage() {
           term_id: termId,
           criterion_id: draft.criterion_id,
           text: draft.text,
+          text_ta: draft.text_ta.trim() || null,
           curriculum: draft.curriculum,
         });
       } else {
-        await updateQuestion.mutateAsync({ id: editing.id, body: draft });
+        await updateQuestion.mutateAsync({
+          id: editing.id,
+          body: { ...draft, text_ta: draft.text_ta.trim() || null },
+        });
       }
       setDraft(null);
       setEditing(null);
@@ -192,7 +199,12 @@ export function QuestionnairePage() {
               onClick={() => {
                 if (firstCriterionId === null) return;
                 setEditing(null);
-                setDraft({ text: '', criterion_id: firstCriterionId, curriculum: null });
+                setDraft({
+                  text: '',
+                  text_ta: '',
+                  criterion_id: firstCriterionId,
+                  curriculum: null,
+                });
                 setFormError(null);
               }}
               disabled={firstCriterionId === null || termId === null}
@@ -252,6 +264,9 @@ export function QuestionnairePage() {
                       {question.curriculum ? (
                         <Badge tone="caution">{question.curriculum} only</Badge>
                       ) : null}
+                      {question.text_ta ? null : (
+                        <Badge>No Tamil</Badge>
+                      )}
 
                       <MoveButton
                         label={`Move question ${index + 1} up`}
@@ -271,6 +286,7 @@ export function QuestionnairePage() {
                           setEditing(question);
                           setDraft({
                             text: question.text,
+                            text_ta: question.text_ta ?? '',
                             criterion_id: question.criterion_id,
                             curriculum: question.curriculum,
                           });
@@ -382,6 +398,20 @@ export function QuestionnairePage() {
                 }
                 required
               />
+              <Field
+                label="Question in Tamil (optional)"
+                lang="ta"
+                value={draft.text_ta}
+                placeholder="கருத்துகளைத் தெளிவாக விளக்குகிறார்."
+                onChange={(event) =>
+                  setDraft({ ...draft, text_ta: event.target.value })
+                }
+              />
+              <p className="-mt-1 text-xs text-ink-400">
+                Left blank, Tamil readers see the English wording. The question
+                is still asked — an untranslated question falls back rather
+                than disappearing from their form.
+              </p>
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="criterion-select"

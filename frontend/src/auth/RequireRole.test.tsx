@@ -17,6 +17,7 @@ function account(role: Role): Account {
     email: 'test.person@example.edu',
     class_group_id: role === 'student' ? 1 : null,
     avatar: null,
+    language: 'en',
   };
 }
 

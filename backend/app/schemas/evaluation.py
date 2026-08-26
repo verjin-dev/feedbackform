@@ -41,6 +41,13 @@ class CommentPromptOut(BaseModel):
 
 class QuestionnaireOut(BaseModel):
     term: TermBrief
+
+    # Which language this came back in, after normalising. The interface needs
+    # it to set `lang` on the form: Tamil text inside an element declared
+    # English is read by a screen reader with English phonetics, which is
+    # unintelligible rather than merely wrong.
+    language: str = "en"
+
     criteria: list[CriterionBlock]
     comment_prompts: list[CommentPromptOut] = Field(default_factory=list)
 

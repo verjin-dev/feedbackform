@@ -13,9 +13,17 @@ class Criterion(Base, TimestampMixin):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(255))
 
+    # Tamil, where somebody at the college has supplied it. English is the
+    # fallback and never the empty string: a criterion heading that vanishes
+    # for Tamil readers is worse than one they read in English.
+    name_ta: Mapped[str | None] = mapped_column(String(255))
+
     # Legacy stored ordering in a `text` column and sorted with
     # `order by abs(order_by)` to coerce it back to a number.
     position: Mapped[int] = mapped_column(SmallInteger, default=0)
+
+    def display_name(self, language: str) -> str:
+        return (self.name_ta or self.name) if language == "ta" else self.name
 
 
 class Question(Base, TimestampMixin):
@@ -37,6 +45,13 @@ class Question(Base, TimestampMixin):
         ForeignKey("criterion.id", ondelete="RESTRICT")
     )
     text: Mapped[str] = mapped_column(Text)
+
+    # The wording is the college's, not the interface's, so it cannot be
+    # shipped in a translation file -- it has to be entered per question, and
+    # until it is, English stands in. A half-translated questionnaire is
+    # readable; one where untranslated questions disappear is not.
+    text_ta: Mapped[str | None] = mapped_column(Text)
+
     position: Mapped[int] = mapped_column(SmallInteger, default=0)
 
     # NULL means every department answers it. A value means only students whose
@@ -53,6 +68,9 @@ class Question(Base, TimestampMixin):
     @property
     def is_core(self) -> bool:
         return self.curriculum is None
+
+    def display_text(self, language: str) -> str:
+        return (self.text_ta or self.text) if language == "ta" else self.text
 
     term: Mapped[AcademicTerm] = relationship()
     criterion: Mapped[Criterion] = relationship(lazy="joined")

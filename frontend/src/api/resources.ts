@@ -90,6 +90,7 @@ export interface QuestionInput {
   term_id: number;
   criterion_id: number;
   text: string;
+  text_ta?: string | null;
 
   // Sent explicitly as null to move a department question back into the core;
   // omitted on a patch, the scope is left alone.

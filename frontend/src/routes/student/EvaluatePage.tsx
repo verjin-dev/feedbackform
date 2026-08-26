@@ -4,15 +4,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { ApiError, api } from '@/api/client';
 import type { CommentPrompt, PendingAssignment, Questionnaire } from '@/api/types';
 import { Alert, Button, Card, cx } from '@/components/ui';
+import { useLanguage } from '@/i18n/useLanguage';
 import { PulsePrompt } from '@/routes/student/PulsePrompt';
 
-const SCALE = [
-  { value: 1, label: 'Poor' },
-  { value: 2, label: 'Satisfactory' },
-  { value: 3, label: 'Good' },
-  { value: 4, label: 'Very good' },
-  { value: 5, label: 'Excellent' },
-] as const;
+/** The wording is translated; the numbers are not. A rating means the same
+ *  thing in both languages and is stored as the number either way. */
+const SCALE = [1, 2, 3, 4, 5] as const;
 
 function messageFrom(error: unknown, fallback: string): string {
   return error instanceof ApiError || error instanceof Error ? error.message : fallback;
@@ -20,6 +17,7 @@ function messageFrom(error: unknown, fallback: string): string {
 
 export function EvaluatePage() {
   const queryClient = useQueryClient();
+  const { language, t } = useLanguage();
 
   const pending = useQuery({
     queryKey: ['pending-assignments'],
@@ -86,7 +84,7 @@ export function EvaluatePage() {
   if (loadError instanceof ApiError && loadError.isConflict) {
     // No current term configured at all.
     return (
-      <Notice title="Not available yet">
+      <Notice title={t('evaluate.notAvailable')}>
         Feedback has not been set up for this year. Please check back later.
       </Notice>
     );
@@ -94,7 +92,7 @@ export function EvaluatePage() {
 
   if (status === 'pending') {
     return (
-      <Notice title="Not started yet">
+      <Notice title={t('evaluate.notStarted')}>
         The feedback period for {questionnaire.data?.term.year} has not opened. You
         will be able to give feedback once your college opens it.
       </Notice>
@@ -103,7 +101,7 @@ export function EvaluatePage() {
 
   if (status === 'closed') {
     return (
-      <Notice title="Feedback is closed">
+      <Notice title={t('evaluate.closed')}>
         The feedback period for {questionnaire.data?.term.year} has ended. Thank you
         to everyone who took part.
       </Notice>
@@ -112,7 +110,7 @@ export function EvaluatePage() {
 
   if (assignments.length === 0) {
     return (
-      <Notice title="All done" tone="positive">
+      <Notice title={t('evaluate.allDone')} tone="positive">
         You have given feedback for every subject this year. Thank you — there is
         nothing left to do.
       </Notice>
@@ -147,12 +145,15 @@ export function EvaluatePage() {
       setShowMissing(false);
       setSelectedId(null);
     } catch (cause) {
-      setError(messageFrom(cause, 'Your feedback could not be saved. Please try again.'));
+      setError(messageFrom(cause, t('evaluate.saveFailed')));
     }
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
+    // Declared on the form rather than on <html>: the question wording comes
+    // back in the reader's language, and Tamil inside an element declared
+    // English is read by a screen reader with English phonetics.
+    <div className="mx-auto flex w-full max-w-3xl flex-col gap-4" lang={language}>
       {justSubmitted ? (
         <Alert tone="positive">
           Feedback submitted for {justSubmitted}. Thank you.
@@ -162,10 +163,10 @@ export function EvaluatePage() {
 
       <PulsePrompt />
 
-      <Card title="Subjects to review">
+      <Card title={t('evaluate.heading')}>
         <p className="mb-3 text-sm text-ink-500">
-          {assignments.length} left. Your answers are recorded without your name,
-          and your instructor sees only combined results for the whole class.
+          {t('evaluate.remaining', { count: assignments.length })}{' '}
+          {t('evaluate.anonymous')}
         </p>
 
         {/* A horizontal scroller on phones, a wrapped list on wider screens.
@@ -262,10 +263,10 @@ export function EvaluatePage() {
                         <div className="mt-2 grid grid-cols-5 gap-1">
                           {SCALE.map((option) => (
                             <label
-                              key={option.value}
+                              key={option}
                               className={cx(
                                 'flex cursor-pointer flex-col items-center gap-1 rounded-md border px-1 py-2 text-center transition-colors',
-                                value === option.value
+                                value === option
                                   ? 'border-accent-500 bg-accent-50'
                                   : 'border-ink-200 hover:bg-ink-50',
                               )}
@@ -273,16 +274,16 @@ export function EvaluatePage() {
                               <input
                                 type="radio"
                                 name={`question-${question.id}`}
-                                value={option.value}
+                                value={option}
                                 // Never defaulted. The legacy form pre-checked
                                 // 5 for every question, so a student could
                                 // submit a full set of top marks without
                                 // reading one of them.
-                                checked={value === option.value}
+                                checked={value === option}
                                 onChange={() => {
                                   setAnswers((current) => ({
                                     ...current,
-                                    [question.id]: option.value,
+                                    [question.id]: option,
                                   }));
                                 }}
                                 className="sr-only"
@@ -293,13 +294,13 @@ export function EvaluatePage() {
                               <span
                                 className={cx(
                                   'text-sm font-semibold tabular-nums',
-                                  value === option.value ? 'text-accent-700' : 'text-ink-500',
+                                  value === option ? 'text-accent-700' : 'text-ink-500',
                                 )}
                               >
-                                {option.value}
+                                {option}
                               </span>
                               <span className="text-[11px] leading-tight text-ink-500">
-                                {option.label}
+                                {t(`rating.${option}` as const)}
                               </span>
                             </label>
                           ))}
@@ -347,7 +348,7 @@ export function EvaluatePage() {
                             }))
                           }
                           className="w-full rounded-md bg-white px-3 py-2 text-sm text-ink-800 ring-1 ring-ink-200 placeholder:text-ink-400"
-                          placeholder="Leave blank if you would rather not."
+                          placeholder={t('evaluate.optional')}
                         />
                         {value.length > 1200 ? (
                           <span className="text-xs text-ink-400 tabular-nums">
@@ -365,14 +366,18 @@ export function EvaluatePage() {
                 most students will do this. */}
             <div className="flex flex-col gap-3 border-t border-ink-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
               <span className="text-sm text-ink-500">
-                {complete ? 'Ready to submit.' : `${allQuestions.length - answeredCount} left.`}
+                {complete
+                  ? t('evaluate.ready')
+                  : t('evaluate.remaining', {
+                      count: allQuestions.length - answeredCount,
+                    })}
               </span>
               <Button
                 type="submit"
                 loading={submit.isPending}
                 className="min-h-11 w-full sm:w-auto"
               >
-                Submit feedback
+                {t('evaluate.submit')}
               </Button>
             </div>
           </form>

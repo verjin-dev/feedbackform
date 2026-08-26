@@ -17,6 +17,10 @@ export interface Account {
   email: string;
   class_group_id: number | null;
   avatar: string | null;
+
+  // "en" or "ta". Kept on the account rather than in the browser: students
+  // share lab machines.
+  language: string;
 }
 
 export interface AcademicTerm {
@@ -53,6 +57,11 @@ export interface Question {
   term_id: number;
   criterion_id: number;
   text: string;
+
+  // The college's own Tamil wording. null means nobody has supplied it and
+  // English stands in on the student's form.
+  text_ta: string | null;
+
   position: number;
 
   // null asks it of the whole college; a curriculum asks it only of that
@@ -90,6 +99,9 @@ export interface QuestionnaireBlock {
 export type CommentPrompt = 'helped' | 'change';
 
 export interface Questionnaire {
+  // Set as `lang` on the form. Tamil inside an element declared English is
+  // read by a screen reader with English phonetics.
+  language: string;
   term: Pick<AcademicTerm, 'id' | 'year' | 'semester' | 'status'>;
   criteria: QuestionnaireBlock[];
   comment_prompts: { prompt: CommentPrompt; text: string }[];

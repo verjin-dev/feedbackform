@@ -54,6 +54,11 @@ class Account(Base, TimestampMixin):
     avatar: Mapped[str | None] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(default=True)
 
+    # "en" or "ta". A column rather than a browser setting: students share lab
+    # machines, and a preference that follows the machine rather than the
+    # person is a preference that keeps being wrong.
+    language: Mapped[str] = mapped_column(String(5), default="en", server_default="en")
+
     class_group: Mapped[ClassGroup | None] = relationship(lazy="joined")
 
     @property

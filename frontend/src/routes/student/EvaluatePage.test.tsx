@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { AuthContext, type AuthState } from '@/auth/AuthProvider';
 import { EvaluatePage } from '@/routes/student/EvaluatePage';
 
 const ASSIGNMENT = {
@@ -16,6 +17,7 @@ const ASSIGNMENT = {
 
 const QUESTIONNAIRE = {
   term: { id: 1, year: '2025-2026', semester: 1, status: 'open' },
+  language: 'en',
   criteria: [
     {
       criterion_id: 1,
@@ -64,13 +66,37 @@ function stubApi({
   );
 }
 
-function renderPage() {
+/** The page reads its language off the signed-in account, so it needs one.
+ *  English unless a test says otherwise. */
+function authState(language = 'en'): AuthState {
+  return {
+    account: {
+      id: 1,
+      role: 'student',
+      school_id: 'S2201',
+      first_name: 'Karthik',
+      last_name: 'Iyer',
+      full_name: 'Karthik Iyer',
+      email: 'karthik.iyer@example.edu',
+      class_group_id: 1,
+      avatar: null,
+      language,
+    },
+    isResolving: false,
+    signIn: () => Promise.reject(new Error('not used')),
+    signOut: () => Promise.resolve(),
+  };
+}
+
+function renderPage(language = 'en') {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   return render(
     <QueryClientProvider client={client}>
-      <EvaluatePage />
+      <AuthContext.Provider value={authState(language)}>
+        <EvaluatePage />
+      </AuthContext.Provider>
     </QueryClientProvider>,
   );
 }

@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_student
+from app.core import i18n
 from app.core.database import get_session
 from app.models import (
     AcademicTerm,
@@ -102,19 +103,30 @@ def questionnaire(
     # Every assignment a student can rate belongs to their own class group, so
     # one student is asked one questionnaire: the shared core plus whatever
     # their department adds.
+    #
+    # Rendered in the student's language, falling back to English per question:
+    # a half-translated questionnaire is readable, one where the untranslated
+    # questions disappear is not.
+    language = i18n.normalise(student.language)
+
     return QuestionnaireOut(
         term=TermBrief.model_validate(term),
+        language=language,
         criteria=[
             CriterionBlock(
                 criterion_id=criterion.id,
-                name=criterion.name,
-                questions=[{"id": q.id, "text": q.text} for q in questions],
+                name=criterion.display_name(language),
+                questions=[
+                    {"id": q.id, "text": q.display_text(language)} for q in questions
+                ],
             )
             for criterion, questions in _student_questionnaire(db, student, term)
         ],
         comment_prompts=[
-            CommentPromptOut(prompt=prompt, text=text)
-            for prompt, text in comment_service.PROMPT_TEXT.items()
+            CommentPromptOut(
+                prompt=prompt, text=i18n.comment_prompt(prompt.value, language)
+            )
+            for prompt in comment_service.PROMPT_TEXT
         ],
     )
 

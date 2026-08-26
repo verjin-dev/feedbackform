@@ -85,15 +85,18 @@ class SubjectOut(ORMModel):
 
 class CriterionCreate(BaseModel):
     name: str = Field(min_length=1, max_length=255)
+    name_ta: str | None = Field(default=None, max_length=255)
 
 
 class CriterionUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=255)
+    name_ta: str | None = Field(default=None, max_length=255)
 
 
 class CriterionOut(ORMModel):
     id: int
     name: str
+    name_ta: str | None = None
     position: int
 
 
@@ -105,6 +108,11 @@ class QuestionCreate(BaseModel):
     criterion_id: int
     text: str = Field(min_length=1)
 
+    # The Tamil wording, where somebody at the college has supplied it. The
+    # question is the college's text, not the application's, so it cannot ship
+    # in a translation file. English stands in until this is filled.
+    text_ta: str | None = None
+
     # Omitted or null asks it of the whole college. A curriculum asks it only
     # of that department.
     curriculum: str | None = Field(default=None, max_length=100)
@@ -113,6 +121,7 @@ class QuestionCreate(BaseModel):
 class QuestionUpdate(BaseModel):
     criterion_id: int | None = None
     text: str | None = Field(default=None, min_length=1)
+    text_ta: str | None = None
 
     # Present-and-null moves a department question back into the core, so the
     # route reads model_fields_set rather than treating null as "unchanged".
@@ -124,6 +133,7 @@ class QuestionOut(ORMModel):
     term_id: int
     criterion_id: int
     text: str
+    text_ta: str | None = None
     position: int
     curriculum: str | None = None
 

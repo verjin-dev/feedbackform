@@ -163,6 +163,31 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ---
 
+## Before Tamil goes in front of students
+
+The interface strings in `frontend/src/i18n/strings.ts` and the two comment
+prompts in `backend/app/core/i18n.py` were written by the tooling that built
+this, not by a Tamil speaker at the college. They are readable, not authorised.
+
+- [ ] A Tamil speaker on staff reads both files end to end
+- [ ] Someone decides whether the register is right for first-year students —
+      the drafts use the polite plural throughout
+- [ ] The rating words in particular are checked: `rating.1`–`rating.5` carry
+      the whole meaning of the scale, and a student who reads "மோசம்" as
+      harsher than "Poor" will rate differently
+
+Question wording is separate and is the college's own. It is entered per
+question on the questionnaire screen and is never translated by the
+application. Questions with no Tamil are marked **No Tamil** on that screen and
+appear to Tamil readers in English — they are still asked, because a
+half-translated questionnaire is readable while one that drops its
+untranslated questions is quietly a different questionnaire.
+
+- [ ] Decide whether to launch Tamil with a partly translated questionnaire or
+      wait for a full one. Either works; only the second needs a deadline.
+
+---
+
 ## Rollback
 
 Decide this before you need it. Rollback is cheap for the first two weeks and

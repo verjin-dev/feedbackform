@@ -23,6 +23,15 @@ class AccountOut(BaseModel):
     email: EmailStr
     class_group_id: int | None
     avatar: str | None
+    language: str = "en"
+
+
+class LanguageChangeRequest(BaseModel):
+    """Stored on the account rather than in the browser: students share lab
+    machines, and a preference that follows the machine rather than the person
+    is a preference that keeps being wrong."""
+
+    language: str = Field(min_length=2, max_length=5)
 
 
 class PasswordChangeRequest(BaseModel):

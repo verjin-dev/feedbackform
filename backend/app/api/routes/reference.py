@@ -385,6 +385,9 @@ def copy_questionnaire(
             term_id=payload.target_term_id,
             criterion_id=question.criterion_id,
             text=question.text,
+            # Retyping the Tamil each term is worse than retyping the English:
+            # fewer people at the college can check it.
+            text_ta=question.text_ta,
             position=question.position,
             curriculum=question.curriculum,
         )

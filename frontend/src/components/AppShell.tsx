@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 
 import type { Role } from '@/api/types';
 import { useAuth } from '@/auth/useAuth';
+import { LanguagePicker } from '@/i18n/LanguagePicker';
 import { Button, cx } from '@/components/ui';
 
 interface NavItem {
@@ -61,7 +62,13 @@ export function AppShell() {
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="text-sm text-ink-600">{account.full_name}</span>
+          {/* Offered to students only. Staff reports and the admin screens are
+              English throughout, so a picker there would promise something the
+              screens behind it do not deliver. */}
+          {account.role === 'student' ? <LanguagePicker /> : null}
+          <span className="hidden text-sm text-ink-600 sm:inline">
+            {account.full_name}
+          </span>
           <Button variant="ghost" onClick={handleSignOut}>
             Sign out
           </Button>

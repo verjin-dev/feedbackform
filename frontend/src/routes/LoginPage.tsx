@@ -6,9 +6,12 @@ import { landingFor } from '@/auth/landing';
 import { useAuth } from '@/auth/useAuth';
 import { FullPageSpinner } from '@/auth/RequireRole';
 import { Alert, Button, Field } from '@/components/ui';
+import { LanguagePicker } from '@/i18n/LanguagePicker';
+import { useLanguage } from '@/i18n/useLanguage';
 
 export function LoginPage() {
   const { account, isResolving, signIn } = useAuth();
+  const { language, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -17,7 +20,7 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (isResolving) return <FullPageSpinner label="Checking your session" />;
+  if (isResolving) return <FullPageSpinner label={t('auth.checkingSession')} />;
 
   // Already signed in — no reason to show the form again.
   if (account !== null) return <Navigate to={landingFor(account.role)} replace />;
@@ -35,9 +38,11 @@ export function LoginPage() {
       // The API deliberately returns the same message for an unknown address
       // and a wrong password. Showing it verbatim keeps it that way.
       setError(
-        cause instanceof ApiError
-          ? cause.message
-          : 'Something went wrong. Please try again.',
+        // The API deliberately returns the same message for an unknown
+        // address and a wrong password, and returns it in English. Showing it
+        // verbatim keeps the two indistinguishable, which matters more than
+        // showing it translated.
+        cause instanceof ApiError ? cause.message : t('auth.failed'),
       );
     } finally {
       setSubmitting(false);
@@ -45,13 +50,18 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-5">
+    <div className="flex min-h-screen items-center justify-center p-5" lang={language}>
       <div className="w-full max-w-sm">
-        <div className="mb-6">
-          <h1 className="text-xl font-semibold text-ink-900">Faculty Evaluation</h1>
-          <p className="mt-1 text-sm text-ink-500">
-            Sign in with your college email address.
-          </p>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-ink-900">{t('app.title')}</h1>
+            <p className="mt-1 text-sm text-ink-500">
+              Sign in with your college email address.
+            </p>
+          </div>
+          {/* Offered before signing in, not after: a student who cannot read
+              this page cannot reach a setting that lives behind it. */}
+          <LanguagePicker />
         </div>
 
         <form
@@ -62,7 +72,7 @@ export function LoginPage() {
           {error ? <Alert>{error}</Alert> : null}
 
           <Field
-            label="Email"
+            label={t('auth.email')}
             type="email"
             name="email"
             autoComplete="username"
@@ -72,7 +82,7 @@ export function LoginPage() {
           />
 
           <Field
-            label="Password"
+            label={t('auth.password')}
             type="password"
             name="password"
             autoComplete="current-password"
@@ -82,7 +92,7 @@ export function LoginPage() {
           />
 
           <Button type="submit" loading={submitting}>
-            {submitting ? 'Signing in' : 'Sign in'}
+            {submitting ? t('auth.signingIn') : t('auth.signIn')}
           </Button>
 
           <Link

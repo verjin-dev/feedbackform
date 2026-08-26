@@ -3,6 +3,7 @@ import { useState } from 'react';
 
 import { ApiError, api } from '@/api/client';
 import { Alert, Button, Card, cx } from '@/components/ui';
+import { useLanguage } from '@/i18n/useLanguage';
 
 interface PendingPulse {
   round_id: number;
@@ -11,13 +12,8 @@ interface PendingPulse {
   faculty_name: string;
 }
 
-const PACE = [
-  { value: 1, label: 'Much too slow' },
-  { value: 2, label: 'A little slow' },
-  { value: 3, label: 'About right' },
-  { value: 4, label: 'A little fast' },
-  { value: 5, label: 'Much too fast' },
-] as const;
+/** The wording is translated; the numbers are not. */
+const PACE = [1, 2, 3, 4, 5] as const;
 
 /**
  * The mid-term check, from the student's side.
@@ -28,6 +24,7 @@ const PACE = [
  * one made.
  */
 export function PulsePrompt() {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [active, setActive] = useState<number | null>(null);
   const [pace, setPace] = useState<number | null>(null);
@@ -71,7 +68,7 @@ export function PulsePrompt() {
       setError(
         cause instanceof ApiError || cause instanceof Error
           ? cause.message
-          : 'That could not be sent.',
+          : t('pulse.sendFailed'),
       );
     }
   }
@@ -118,10 +115,10 @@ export function PulsePrompt() {
           <div className="flex flex-wrap gap-2">
             {PACE.map((option) => (
               <label
-                key={option.value}
+                key={option}
                 className={cx(
                   'cursor-pointer rounded-md border px-3 py-2 text-xs transition-colors',
-                  pace === option.value
+                  pace === option
                     ? 'border-accent-500 bg-accent-50 text-accent-700'
                     : 'border-ink-200 hover:bg-ink-50',
                 )}
@@ -130,10 +127,10 @@ export function PulsePrompt() {
                   type="radio"
                   name="pace"
                   className="sr-only"
-                  checked={pace === option.value}
-                  onChange={() => setPace(option.value)}
+                  checked={pace === option}
+                  onChange={() => setPace(option)}
                 />
-                {option.label}
+                {t(`pace.${option}` as const)}
               </label>
             ))}
           </div>
@@ -179,7 +176,7 @@ export function PulsePrompt() {
             maxLength={600}
             value={suggestion}
             onChange={(event) => setSuggestion(event.target.value)}
-            placeholder="Optional."
+            placeholder={t('pulse.optional')}
             className="w-full rounded-md bg-white px-3 py-2 text-sm text-ink-800 ring-1 ring-ink-200 placeholder:text-ink-400"
           />
         </label>

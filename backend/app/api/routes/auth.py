@@ -26,8 +26,10 @@ from app.core.security import (
 )
 from app.core.throttle import login_throttle
 from app.models.account import Account
+from app.core import i18n
 from app.schemas.auth import (
     AccountOut,
+    LanguageChangeRequest,
     LoginRequest,
     PasswordChangeRequest,
     PasswordResetConfirm,
@@ -119,6 +121,28 @@ def logout(response: Response) -> None:
 
 @router.get("/me", response_model=AccountOut)
 def me(account: Account = Depends(get_current_account)) -> Account:
+    return account
+
+
+@router.get("/languages", response_model=list[dict])
+def languages() -> list[dict]:
+    """Named in the language they name, not in the reader's current one:
+    somebody looking for Tamil is looking for the word, not for "Tamil"."""
+    return [{"code": code, "name": i18n.LANGUAGE_NAMES[code]} for code in i18n.SUPPORTED]
+
+
+@router.post("/me/language", response_model=AccountOut)
+def change_language(
+    payload: LanguageChangeRequest,
+    account: Account = Depends(get_current_account),
+    db: Session = Depends(get_session),
+) -> Account:
+    # Normalised rather than rejected: the worst case of an unrecognised code
+    # is a student seeing English and switching again, which is not worth an
+    # error page in the middle of filling in a form.
+    account.language = i18n.normalise(payload.language)
+    db.commit()
+    db.refresh(account)
     return account
 
 
