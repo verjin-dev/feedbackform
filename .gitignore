@@ -1,9 +1,21 @@
-# Real database credentials — never commit.
+# --- The archived PHP application ------------------------------------------
+#
+# Paths kept working after the move so a checkout of an older commit does not
+# start offering to commit somebody's production credentials.
 config.local.php
+archive/config.local.php
 
-# Avatars uploaded in production are user data, not source. Files already tracked
-# here are the template's seed images and stay tracked; this only stops new
-# production uploads from being committed.
-assets/uploads/*
-!assets/uploads/.htaccess
-!assets/uploads/no-image-available.png
+# Avatars uploaded in production are user data, not source. Files already
+# tracked here are the template's seed images and stay tracked; this only stops
+# new production uploads from being committed.
+archive/assets/uploads/*
+!archive/assets/uploads/.htaccess
+!archive/assets/uploads/no-image-available.png
+
+# --- Everywhere --------------------------------------------------------------
+.DS_Store
+Thumbs.db
+*.local
+.env
+.env.*
+!.env.example
