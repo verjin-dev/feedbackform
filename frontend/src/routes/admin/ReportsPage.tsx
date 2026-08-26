@@ -5,6 +5,7 @@ import { api } from '@/api/client';
 import { accounts, terms } from '@/api/resources';
 import type { FacultyReport } from '@/api/types';
 import { Mean, ReportBody } from '@/components/ReportView';
+import { TrendPanel } from '@/components/Trend';
 import { Alert, Card } from '@/components/ui';
 import { TermPicker, useSelectedTerm } from '@/routes/admin/TermPicker';
 
@@ -83,6 +84,8 @@ export function ReportsPage() {
           </dl>
         ) : null}
       </Card>
+
+      {facultyId !== null ? <TrendPanel facultyId={facultyId} /> : null}
 
       {report.data ? <ReportBody report={report.data} /> : null}
     </div>

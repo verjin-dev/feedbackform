@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -6,8 +6,9 @@ from app.api import crud
 from app.api.deps import require_admin, require_staff
 from app.core.database import get_session
 from app.models import AcademicTerm, Account, Role
-from app.schemas.report import FacultyReport, ResponseRateReport
+from app.schemas.report import FacultyReport, FacultyTrend, ResponseRateReport
 from app.services import comments as comment_service
+from app.services import trends as trend_service
 from app.services.reporting import build_faculty_report, build_response_rate_report
 
 router = APIRouter(prefix="/reports", tags=["reports"])
@@ -106,3 +107,40 @@ def response_rates(
     questionnaire from a barely answered one.
     """
     return build_response_rate_report(db, _resolve_term(db, term_id))
+
+
+@router.get("/me/trend", response_model=FacultyTrend)
+def my_trend(
+    limit: int = Query(trend_service.DEFAULT_TERM_LIMIT, ge=2, le=20),
+    account: Account = Depends(require_staff),
+    db: Session = Depends(get_session),
+):
+    if account.role is not Role.faculty:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Only faculty accounts have a personal report.",
+        )
+    return trend_service.faculty_trend(db, account, limit=limit)
+
+
+@router.get("/faculty/{faculty_id}/trend", response_model=FacultyTrend)
+def faculty_trend(
+    faculty_id: int,
+    limit: int = Query(trend_service.DEFAULT_TERM_LIMIT, ge=2, le=20),
+    account: Account = Depends(require_staff),
+    db: Session = Depends(get_session),
+):
+    """The same scoping as the report itself: admins see anyone, faculty see
+    only themselves."""
+    if account.role is Role.faculty and account.id != faculty_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only view your own results.",
+        )
+
+    faculty = crud.get_or_404(db, Account, faculty_id)
+    if faculty.role is not Role.faculty:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Account not found"
+        )
+    return trend_service.faculty_trend(db, faculty, limit=limit)

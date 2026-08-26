@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ApiError, api } from '@/api/client';
 import type { AcademicTerm, FacultyReport } from '@/api/types';
 import { Mean, ReportBody } from '@/components/ReportView';
+import { TrendPanel } from '@/components/Trend';
 import { Alert, Card } from '@/components/ui';
 
 /**
@@ -123,6 +124,10 @@ export function ResultsPage() {
           </>
         )}
       </Card>
+
+      {/* Placed above the detail: an instructor asking "am I getting
+          better?" should not have to scroll past fifteen rows to find out. */}
+      <TrendPanel facultyId="me" />
 
       <ReportBody report={data} />
     </div>

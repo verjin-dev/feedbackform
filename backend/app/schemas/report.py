@@ -93,3 +93,48 @@ class ResponseRateReport(BaseModel):
     eligible_students: int
     responses: int
     response_rate: float | None
+
+
+class TrendPoint(BaseModel):
+    term_id: int
+    label: str
+    # None where too few responded that term. A gap in the line is the honest
+    # rendering; a dot would be read as a fact.
+    mean: float | None
+    responses: int
+    eligible_students: int
+    response_rate: float | None
+    reliability: str
+
+
+class TrendSeries(BaseModel):
+    name: str
+    points: list[TrendPoint]
+
+
+class CriterionTrend(TrendSeries):
+    criterion_id: int
+
+
+class SubjectTrend(BaseModel):
+    subject_id: int
+    code: str
+    name: str
+    points: list[TrendPoint]
+
+
+class TermRef(BaseModel):
+    id: int
+    year: str
+    semester: int
+    label: str
+
+
+class FacultyTrend(BaseModel):
+    faculty_id: int
+    faculty_name: str
+    terms: list[TermRef]
+    overall: list[TrendPoint]
+    criteria: list[CriterionTrend]
+    subjects: list[SubjectTrend]
+    minimum_responses_for_mean: int
